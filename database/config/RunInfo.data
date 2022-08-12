@@ -6,10 +6,10 @@
 
 Ca48Ni64E140     4023           4032            V1                          0           uBallDS_uBallHira
 Ca48Ni64E140     4082           4123            V1                          0           uBallDS_uBallHira_uBallNW
-Ca48Ni64E140     4224           4229            V1                          0           uBallDS_uBallNW
-Ca48Ni64E140     4231           4240            V1                          0           uBallDS_uBallNW
-Ca48Ni64E140     4242           4245            V1                          0           uBallDS_uBallNW
-Ca48Ni64E140     4315           4327            V1                          0           uBallDS_uBallNW
+# Ca48Ni64E140     4224           4229            V1                          0           uBallDS_uBallNW
+# Ca48Ni64E140     4231           4240            V1                          0           uBallDS_uBallNW
+# Ca48Ni64E140     4242           4245            V1                          0           uBallDS_uBallNW
+# Ca48Ni64E140     4315           4327            V1                          0           uBallDS_uBallNW
 
 
 Ca48Ni64E56     4383            4399            V5                          0           uBallDS_uBallHira_uBallNW
@@ -19,9 +19,9 @@ Ca48Ni64E56     4543            4573            V5                          0   
 Ca48Ni64E56     4642            4661            V5                          0           uBallDS_uBallHira_uBallNW
   
 
-# Ca40Ni58E140     2571           2586            V2                          0           uBallDS_uBallHira_uBallNW
-# Ca40Ni58E140     2587           2588            V2.1                        0           uBallDS_uBallHira_uBallNW
-# Ca40Ni58E140     2591           2601            V2.1                        0           uBallDS_uBallHira_uBallNW
+Ca40Ni58E140     2571           2586            V2                          0           uBallDS_uBallHira_uBallNW
+Ca40Ni58E140     2587           2588            V2.1                        0           uBallDS_uBallHira_uBallNW
+Ca40Ni58E140     2591           2601            V2.1                        0           uBallDS_uBallHira_uBallNW
 Ca40Ni58E140     2848           2851            V2                          0           uBallDS_uBallHira_uBallNW
 
 

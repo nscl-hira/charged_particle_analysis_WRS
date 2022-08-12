@@ -1,0 +1,50 @@
+
+
+# Ignore all
+*
+
+# Unignore all with extensions
+!*.*
+
+# Unignore all dirs
+!*/
+
+#Unignore makefiles
+!**/Makefile
+!**/makefile
+
+
+# py env folder 
+**/env
+
+# Compiled Object files
+**/*.o
+
+# executables
+**/*.exe
+
+# lib files
+**/*.d
+**/*.so
+**/*.pcm
+
+# Fortran module files
+**/*.mod
+**/*.smod
+
+
+
+# Result, Data, old files
+*/*.root
+**/data
+**/old
+**/trials
+
+
+# bash scripts
+**/*.sh
+
+# temp files
+**/.directory
+**/*.log
+**/*.png
