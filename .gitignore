@@ -16,6 +16,7 @@
 
 # py env folder 
 **/env
+**/figures
 
 # Compiled Object files
 **/*.o
@@ -35,11 +36,12 @@
 
 
 # Result, Data, old files
-*/*.root
+**/*.root
+**/*.csv
 **/data
 **/old
 **/trials
-
+**/output/*
 
 # bash scripts
 **/*.sh
@@ -48,3 +50,5 @@
 **/.directory
 **/*.log
 **/*.png
+
+.vscode/settings.json
