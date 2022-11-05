@@ -20,7 +20,8 @@ struct manager
 
     runinfo *m_runinfo;
     eventcut m_eventcut;
-    hira m_hira;
+    // hira m_hira;
+    Hira *m_hira;
 
     std::map<int, RootReader *> readers;
     std::map<int, int> runIndex;
@@ -119,8 +120,12 @@ void manager::init()
         this->triggers[iRun] = this->m_runinfo->GetTriggerCondition(this->reaction, iRun);
     }
 
-    m_hira = {this->path_badmap, this->path_angles};
-    m_hira.init();
+    this->m_hira = new Hira();
+    this->m_hira->Init_Angle(this->path_angles);
+    // m_hira->Init)
+
+    // m_hira = {this->path_badmap, this->path_angles};
+    // m_hira.init();
 
     this->m_eventcut = {{1, 80}, {5, 80}, this->impact_parameter};
     this->hist_raw = {"raw", this->betacms, this->beam_rapidity};
@@ -147,10 +152,15 @@ void manager::run()
             continue;
         }
 
-        this->m_hira.m_badmap = new badmap(this->path_badmap, badmap_version);
+        this->m_hira->Init_Badmap(this->path_badmap, badmap_version);
+
         fs::path path_geoeff = this->path_badmap / ("f1_GeoEff_" + badmap_version + ".root");
-        this->m_hira.m_geoeff = new geoeff();
-        this->m_hira.m_geoeff->ReadGeoEffHistogram(path_geoeff.c_str());
+        this->m_hira->Init_GeoEff(path_geoeff);
+
+        // this->m_hira.m_badmap = new badmap(this->path_badmap, badmap_version);
+        // fs::path path_geoeff = this->path_badmap / ("f1_GeoEff_" + badmap_version + ".root");
+        // this->m_hira.m_geoeff = new geoeff();
+        // this->m_hira.m_geoeff->ReadGeoEffHistogram(path_geoeff.c_str());
 
         // total num of event in 1 file
         int EventNum = iReader->tree->GetEntries();
@@ -208,8 +218,12 @@ void manager::run()
 
             for (int n = 0; n < Hira_fmulti; n++)
             {
-                double thetalab = this->m_hira.m_angles->GetTheta(fnumtel[n], fnumstripf[n], fnumstripb[n]) * TMath::DegToRad();
-                double phi = this->m_hira.m_angles->GetPhi(fnumtel[n], fnumstripf[n], fnumstripb[n]) * TMath::DegToRad();
+                // double thetalab = this->m_hira.m_angles->GetTheta(fnumtel[n], fnumstripf[n], fnumstripb[n]) * TMath::DegToRad();
+                // double phi = this->m_hira.m_angles->GetPhi(fnumtel[n], fnumstripf[n], fnumstripb[n]) * TMath::DegToRad();
+
+                double thetalab = this->m_hira->GetTheta(fnumtel[n], fnumstripf[n], fnumstripb[n]) * TMath::DegToRad();
+
+                double phi = this->m_hira->GetPhi(fnumtel[n], fnumstripf[n], fnumstripb[n]) * TMath::DegToRad();
 
                 double px = fMomentum[n] * TMath::Sin(thetalab) * TMath::Cos(phi);
                 double py = fMomentum[n] * TMath::Sin(thetalab) * TMath::Sin(phi);
@@ -218,16 +232,19 @@ void manager::run()
                 particle particle = {fAId[n] - fZId[n], fZId[n], px, py, pz};
                 particle.init(this->betacms);
 
-                if (this->m_hira.pass(particle))
+                if (this->m_hira->pass(particle))
                 {
 
-                    if (!this->m_hira.pass_badmap(fnumtel[n], fnumstripf[n], fnumstripb[n]))
+                    if (!this->m_hira->pass_badmap(fnumtel[n], fnumstripf[n], fnumstripb[n]))
                     {
                         continue;
                     }
 
-                    double EffGeo = this->m_hira.m_geoeff->Get_GeoEff(particle.thetalab);
-                    double ReactionEff = this->m_hira.m_reactionlost->Get_ReactionLost_CorEff(particle.zid, particle.aid, particle.ekinlab);
+                    // double EffGeo = this->m_hira.m_geoeff->Get_GeoEff(particle.thetalab);
+                    // double ReactionEff = this->m_hira.m_reactionlost->Get_ReactionLost_CorEff(particle.zid, particle.aid, particle.ekinlab);
+
+                    double EffGeo = this->m_hira->Get_GeoEff(particle.thetalab);
+                    double ReactionEff = this->m_hira->Get_ReactionLost_CorEff(particle.zid, particle.aid, particle.ekinlab);
 
                     if (EffGeo > 0 && EffGeo < 0.001)
                     {
@@ -251,7 +268,7 @@ void manager::run()
             }
 #endif
         }
-        this->m_hira.reset();
+        // this->m_hira.reset();
         delete iReader;
     }
 }
