@@ -2,19 +2,8 @@
 
 geoeff::geoeff()
 {
-    h2_WholeHira_Theta_Phi_Lab = 0;
-    h2_noBadMap_Theta_Phi_Lab = 0;
-    h2_BadMap_Theta_Phi_Lab = 0;
-    h1_BadMap_Theta_Lab_HitCount = 0;
-    h1_BadMap_Theta_Lab_Eff = 0;
-    h1_noBadMap_Theta_Lab_HitCount = 0;
-    h1_noBadMap_Theta_Lab_Eff = 0;
-    h1_HiraHit_Multi = 0;
-    Hira_BadMapper = 0;
     f1_Results = 0;
-    IsApplyPixelAngle = 1;
 
-    // the below is the default setting of theta range and bin size.
     ThetaRange[0] = 20;
     ThetaRange[1] = 80; // unit:deg.
     ThetaBinSize = 0.1; // unit:deg.
@@ -43,22 +32,32 @@ void geoeff::Cal_GeoEff(TH1D *h1_Count, TH1D *h1_GeoEff, int TotalSimEvtNum)
 
 void geoeff::ReadGeoEffHistogram(const std::string &RootFileName)
 {
-    f1_Results = new TFile(RootFileName.c_str(), "read");
-    h1_BadMap_Theta_Lab_Eff = (TH1D *)f1_Results->Get("h1_BadMap_Theta_Lab_Eff");
-    if (h1_BadMap_Theta_Lab_Eff != 0)
+    fs::path path = RootFileName;
+    if (!fs::exists(path))
+    {
+        std::string msg = RootFileName + " does not exists.";
+        throw std::invalid_argument(msg.c_str());
+    }
+    f1_Results = new TFile(RootFileName.c_str(), "READ");
+
+    for (auto &name : this->h1_names)
+    {
+        this->h1_collection[name] = (TH1D *)f1_Results->Get(name.c_str());
+    }
+    for (auto &name : this->h2_names)
+    {
+        this->h2_collection[name] = (TH2D *)f1_Results->Get(name.c_str());
+    }
+
+    if (this->h1_collection.count("h1_BadMap_Theta_Lab_Eff") == 1)
     {
         std::cout << "Get the GeoEff Correction histogram!" << std::endl;
     }
-    h2_WholeHira_Theta_Phi_Lab = (TH2D *)f1_Results->Get("h2_WholeHira_Theta_Phi_Lab");
-    h2_BadMap_Theta_Phi_Lab = (TH2D *)f1_Results->Get("h2_BadMap_Theta_Phi_Lab");
-    h2_noBadMap_Theta_Phi_Lab = (TH2D *)f1_Results->Get("h2_noBadMap_Theta_Phi_Lab");
-    h1_BadMap_Theta_Lab_HitCount = (TH1D *)f1_Results->Get("h1_BadMap_Theta_Lab_HitCount");
-    h1_HiraHit_Multi = (TH1D *)f1_Results->Get("h1_HiraHit_Multi");
 }
 
 double geoeff::Get_GeoEff(const double &Theta_Lab)
 {
-    int BinIndex = h1_BadMap_Theta_Lab_Eff->FindBin(Theta_Lab);
-    double Eff = h1_BadMap_Theta_Lab_Eff->GetBinContent(BinIndex);
+    int BinIndex = h1_collection["h1_BadMap_Theta_Lab_Eff"]->FindBin(Theta_Lab);
+    double Eff = h1_collection["h1_BadMap_Theta_Lab_Eff"]->GetBinContent(BinIndex);
     return Eff;
 }

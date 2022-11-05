@@ -45,7 +45,8 @@ RootReader::~RootReader()
 {
     if (this->tree)
     {
-        delete this->tree;
+        std::cout << "deleting RootReader" << std::endl;
+        this->tree->Delete();
     }
 }
 

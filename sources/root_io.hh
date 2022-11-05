@@ -35,7 +35,7 @@ struct tree
 class RootReader
 {
 protected:
-    static const int MAX_MULTI = 128;
+    static const int MAX_MULTI = 256;
     std::vector<int> addr_int;
     std::vector<double> addr_double;
     std::vector<std::array<int, MAX_MULTI>> addr_aint;

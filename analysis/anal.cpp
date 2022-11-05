@@ -1,5 +1,7 @@
 #include "anal.hh"
 
+// #define DEBUG
+
 const double uballDS = 300.;
 std::string path_runinfo = PROJECT_DIR / "database/config/RunInfo.data";
 std::string path_badmap = PROJECT_DIR / "database/GeoEff";
@@ -13,8 +15,8 @@ struct manager
 
     double betacms, beam_rapidity;
     double normalization = 0.;
-    int total_events = 0;
-    int passed_events = 0;
+    long total_events = 0;
+    long passed_events = 0;
 
     runinfo *m_runinfo;
     eventcut m_eventcut;
@@ -79,10 +81,10 @@ void manager::init()
         {"uBall.fb", "double"},
         {"uBall.fbhat", "double"},
         {"uBall.fmulti", "int"},
-        {"uBall.fnumring", "int"},
-        {"uBall.fnumdet", "int"},
-        {"HiRA.fmulti", "int"},
+        {"uBall.fnumring", "int[uBall.fmulti]"},
+        {"uBall.fnumdet", "int[uBall.fmulti]"},
 
+        {"HiRA.fmulti", "int"},
         {"HiRA.fnumtel", "int[HiRA.fmulti]"},
         {"HiRA.fnumcsi", "int[HiRA.fmulti]"},
         {"HiRA.fnumstripf", "int[HiRA.fmulti]"},
@@ -96,8 +98,6 @@ void manager::init()
         {"HiRA.fMomentumCMS", "double[HiRA.fmulti]"},
         {"HiRA.fZId", "int[HiRA.fmulti]"},
         {"HiRA.fAId", "int[HiRA.fmulti]"},
-        {"HiRA.fKinEnergyCMS", "double[HiRA.fmulti]"},
-        {"HiRA.fKinEnergyCMS", "double[HiRA.fmulti]"},
     };
 
     for (auto &br : branches)
@@ -134,13 +134,6 @@ void manager::init()
 
 void manager::run()
 {
-    double TDCTriggers_uBallDS_TRG, TDCTriggers_uBallHira_TRG, TDCTriggers_uBallNW_TRG;
-    int Hira_fmulti, uBall_fmulti;
-    double uBall_fbhat;
-    int *fnumtel, *fnumstripf, *fnumstripb, *fnumcsi;
-    double *fMomentum;
-    int *fZId, *fAId;
-
     for (auto &[iRun, iReader] : this->readers)
     {
         int RunIndex = this->runIndex[iRun];
@@ -170,6 +163,13 @@ void manager::run()
                 std::cout << ievt << "events processed..." << std::endl;
             }
 
+            double TDCTriggers_uBallDS_TRG, TDCTriggers_uBallHira_TRG, TDCTriggers_uBallNW_TRG;
+            int Hira_fmulti, uBall_fmulti;
+            double uBall_fbhat;
+            int *fnumtel, *fnumstripf, *fnumstripb, *fnumcsi;
+            double *fMomentum;
+            int *fZId, *fAId;
+
             std::map<std::string, std::any> map = iReader->get_entry(ievt);
             try
             {
@@ -194,6 +194,7 @@ void manager::run()
                 std::cout << e.what() << '\n';
             }
 
+#ifndef DEBUG
             event event = {Hira_fmulti, uBall_fmulti, uBall_fbhat};
             if (!this->m_eventcut.pass(event))
             {
@@ -248,26 +249,25 @@ void manager::run()
                     }
                 }
             }
+#endif
         }
-        if (iRun == 2)
-        {
-            break;
-        }
+        this->m_hira.reset();
+        delete iReader;
     }
 }
 
 void manager::finish()
 {
-    // TFile *outf = new TFile(this->path_out.c_str(), "RECREATE");
-    // this->hist_raw.normalize(1. / this->normalization);
-    // this->hist_geoeff.normalize(1. / this->normalization);
-    // this->hist_alleff.normalize(1. / this->normalization);
+    TFile *outf = new TFile(this->path_out.c_str(), "RECREATE");
+    this->hist_raw.normalize(1. / this->normalization);
+    this->hist_geoeff.normalize(1. / this->normalization);
+    this->hist_alleff.normalize(1. / this->normalization);
 
-    // this->hist_raw.write();
-    // this->hist_geoeff.write();
-    // this->hist_alleff.write();
-    // outf->Write();
-    // outf->Close();
+    this->hist_raw.write();
+    this->hist_geoeff.write();
+    this->hist_alleff.write();
+    outf->Write();
+    outf->Close();
 
     std::cout << this->passed_events << " / " << this->total_events << std::endl;
 }
