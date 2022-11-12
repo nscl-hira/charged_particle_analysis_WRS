@@ -2,6 +2,7 @@ import subprocess
 import pathlib
 import os
 import time
+import datetime
 
 project_dir = pathlib.Path(os.environ['CONDA_PREFIX']).parent
 database = pathlib.Path(project_dir, 'database')
@@ -11,25 +12,25 @@ subsrc_dir = [path for path in pathlib.Path(project_dir, 'sources').iterdir() if
 
 exe_name = pathlib.Path(__file__).stem
 path_main = pathlib.Path(exe_dir, f'{str(exe_name)}.cpp')
+exe = pathlib.Path(exe_dir, path_main.stem)
 
 input_dir = pathlib.Path('/data/HiRA_Cali')
 out_dir = pathlib.Path(project_dir, 'result/spectra')
 out_dir.mkdir(exist_ok=True, parents=True)
 
-beam = 'Ca'
-target = 'Ni'
-beamA = 48
-targetA = 64
-energy = 140
-bimp = (0., 0.4)
-
+# beam = 'Ca'
+# target = 'Ni'
+# beamA = 48
+# targetA = 64
+# energy = 140
+# bimp = (0., 0.4)
 
 def main():
+
     root_inc = subprocess.run('root-config --cflags --libs --glibs',
                               capture_output=True, shell=True, text=True, encoding='utf-8')
     root_inc = root_inc.stdout.strip()
-    exe = pathlib.Path(exe_dir, path_main.stem)
-
+    
     src_inc = ' '.join([f'-I{str(src_dir)}'] + [f'-I{str(path)}' for path in subsrc_dir] + [f'-I{root_inc}'])
 
     print('compiling...\n')
@@ -37,6 +38,18 @@ def main():
     print(compile_cmd, '\n')
     subprocess.run(compile_cmd, shell=True, text=True)
 
+    run('Ca', 'Ni', 40, 58, 56, (0., 0.4))
+    run('Ca', 'Ni', 48, 64, 56, (0., 0.4))
+    run('Ca', 'Ni', 40, 58, 140, (0., 0.4))
+    run('Ca', 'Ni', 48, 64, 140, (0., 0.4))
+
+    run('Ca', 'Sn', 40, 112, 56, (0., 0.4))
+    run('Ca', 'Sn', 48, 124, 56, (0., 0.4))
+    run('Ca', 'Sn', 40, 112, 140, (0., 0.4))
+    run('Ca', 'Sn', 48, 124, 140, (0., 0.4))
+
+
+def run(beam, target, beamA, targetA, energy, bimp):
     path_data = pathlib.Path(
         input_dir, f'{beamA}{beam}{targetA}{target}_{energy}MeVu')
 
@@ -58,7 +71,7 @@ def main():
     subprocess.run(f'{str(exe)} {args}', shell=True, text=True)
     finish_time = time.time()
     elapsed_time = finish_time - start_time
-    print(f'All processes done in {elapsed_time}')
+    print(f'reaction {beam}{beamA}{target}{targetA}E{energy}_bmin{bimp[0]:.1f}_bmax{bimp[1]:.1f} done in {datetime.timedelta(elapsed_time)}')
 
 
 

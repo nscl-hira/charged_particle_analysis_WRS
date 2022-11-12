@@ -213,7 +213,7 @@ void manager::run()
             passed_events++;
             if (TDCTriggers_uBallDS_TRG > -9990)
             {
-                this->normalization += 1. / uballDS;
+                this->normalization += 1.;
             }
 
             for (int n = 0; n < Hira_fmulti; n++)
@@ -276,6 +276,7 @@ void manager::run()
 void manager::finish()
 {
     TFile *outf = new TFile(this->path_out.c_str(), "RECREATE");
+    this->normalization *= uballDS;
     this->hist_raw.normalize(1. / this->normalization);
     this->hist_geoeff.normalize(1. / this->normalization);
     this->hist_alleff.normalize(1. / this->normalization);

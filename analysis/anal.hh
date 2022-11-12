@@ -98,11 +98,11 @@ void histograms::normalize(const double &norm)
 {
     for (auto &[name, h2] : this->h2_pta_rapidity_lab)
     {
-        h2->Scale(1. / norm);
+        h2->Scale(norm);
     }
     for (auto &[name, h1] : this->h1_multi)
     {
-        h1->Scale(1. / norm);
+        h1->Scale(norm);
     }
 }
 
