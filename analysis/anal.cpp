@@ -157,11 +157,6 @@ void manager::run()
         fs::path path_geoeff = this->path_badmap / ("f1_GeoEff_" + badmap_version + ".root");
         this->m_hira->Init_GeoEff(path_geoeff);
 
-        // this->m_hira.m_badmap = new badmap(this->path_badmap, badmap_version);
-        // fs::path path_geoeff = this->path_badmap / ("f1_GeoEff_" + badmap_version + ".root");
-        // this->m_hira.m_geoeff = new geoeff();
-        // this->m_hira.m_geoeff->ReadGeoEffHistogram(path_geoeff.c_str());
-
         // total num of event in 1 file
         int EventNum = iReader->tree->GetEntries();
         this->total_events += EventNum;
@@ -205,22 +200,22 @@ void manager::run()
             }
 
 #ifndef DEBUG
-            event event = {Hira_fmulti, uBall_fmulti, uBall_fbhat};
+
+            event event = {Hira_fmulti, uBall_fmulti, uBall_fbhat, TDCTriggers_uBallDS_TRG};
+
+            if (this->m_eventcut.pass_normalization(event))
+            {
+                this->normalization += 1.;
+            }
+
             if (!this->m_eventcut.pass(event))
             {
                 continue;
             }
             passed_events++;
-            if (TDCTriggers_uBallDS_TRG > -9990)
-            {
-                this->normalization += 1.;
-            }
 
             for (int n = 0; n < Hira_fmulti; n++)
             {
-                // double thetalab = this->m_hira.m_angles->GetTheta(fnumtel[n], fnumstripf[n], fnumstripb[n]) * TMath::DegToRad();
-                // double phi = this->m_hira.m_angles->GetPhi(fnumtel[n], fnumstripf[n], fnumstripb[n]) * TMath::DegToRad();
-
                 double thetalab = this->m_hira->GetTheta(fnumtel[n], fnumstripf[n], fnumstripb[n]) * TMath::DegToRad();
 
                 double phi = this->m_hira->GetPhi(fnumtel[n], fnumstripf[n], fnumstripb[n]) * TMath::DegToRad();
@@ -239,9 +234,6 @@ void manager::run()
                     {
                         continue;
                     }
-
-                    // double EffGeo = this->m_hira.m_geoeff->Get_GeoEff(particle.thetalab);
-                    // double ReactionEff = this->m_hira.m_reactionlost->Get_ReactionLost_CorEff(particle.zid, particle.aid, particle.ekinlab);
 
                     double EffGeo = this->m_hira->Get_GeoEff(particle.thetalab);
                     double ReactionEff = this->m_hira->Get_ReactionLost_CorEff(particle.zid, particle.aid, particle.ekinlab);

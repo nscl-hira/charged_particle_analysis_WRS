@@ -39,21 +39,4 @@ private:
     std::map<std::string, std::array<double, 2>> thetalabcut;
 };
 
-// struct hira
-// {
-//     fs::path dir_badmap, path_angles;
-
-//     badmap *m_badmap;
-//     geoeff *m_geoeff;
-//     reactionlost *m_reactionlost;
-//     angles *m_angles;
-
-//     std::map<std::string, std::array<double, 2>> ekinlabcut;
-//     std::map<std::string, std::array<double, 2>> thetalabcut;
-
-//     void init();
-//     void reset();
-//     bool pass(const particle &particle);
-//     bool pass_badmap(const int &tel, const int &ef, const int &eb);
-// };
 #endif

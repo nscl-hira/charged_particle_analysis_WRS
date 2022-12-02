@@ -18,13 +18,6 @@ input_dir = pathlib.Path('/data/HiRA_Cali')
 out_dir = pathlib.Path(project_dir, 'result/spectra')
 out_dir.mkdir(exist_ok=True, parents=True)
 
-# beam = 'Ca'
-# target = 'Ni'
-# beamA = 48
-# targetA = 64
-# energy = 140
-# bimp = (0., 0.4)
-
 def main():
 
     root_inc = subprocess.run('root-config --cflags --libs --glibs',

@@ -23,14 +23,30 @@ struct event
 {
     int multi_hira, multi_uball;
     double bimp;
+    double tdc_uball_ds;
 };
 struct eventcut
 {
     std::array<int, 2> multicut_hira;
     std::array<int, 2> multicut_uball;
     std::array<double, 2> impact_parameter_cut;
+
     bool pass(const event &event);
+    bool pass_normalization(const event &event);
 };
+
+bool eventcut::pass_normalization(const event &event)
+{
+    int multi_uball = event.multi_uball;
+    double bimp = event.bimp;
+    double tdc_uball_ds = event.tdc_uball_ds;
+    return (
+        multi_uball >= this->multicut_uball[0] &&
+        multi_uball <= this->multicut_uball[1] &&
+        bimp >= this->impact_parameter_cut[0] &&
+        bimp < this->impact_parameter_cut[1] &&
+        tdc_uball_ds > -9990);
+}
 
 bool eventcut::pass(const event &event)
 {

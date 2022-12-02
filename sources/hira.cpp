@@ -113,9 +113,3 @@ bool Hira::pass(const particle &particle)
         ekinlab >= this->ekinlabcut[name][0] && ekinlab <= this->ekinlabcut[name][1] &&
         thetalab >= this->thetalabcut[name][0] && thetalab <= this->thetalabcut[name][1]);
 }
-
-// void Hira::reset()
-// {
-//     delete m_geoeff;
-//     delete m_badmap;
-// }
