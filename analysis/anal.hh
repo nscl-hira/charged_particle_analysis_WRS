@@ -9,7 +9,7 @@
 namespace fs = std::filesystem;
 
 #include "../sources/root_io.cpp"
-#include "../sources/particle.cpp"
+#include "../sources/hira_particle.cpp"
 #include "../sources/runinfo.cpp"
 #include "../sources/hira.cpp"
 
@@ -68,7 +68,7 @@ struct histograms
     std::map<std::string, TH1D *> h1_multi;
 
     void init();
-    void fill(const particle &particle, const double &weight = 1.);
+    void fill(const hira_particle &particle, const double &weight = 1.);
     void normalize(const double &norm);
     void write();
 };
@@ -90,7 +90,7 @@ void histograms::init()
     }
 }
 
-void histograms::fill(const particle &particle, const double &weight)
+void histograms::fill(const hira_particle &particle, const double &weight)
 {
 
     if (std::find(this->particlenames.begin(), this->particlenames.end(), particle.name) - this->particlenames.begin() == this->particlenames.size())

@@ -122,10 +122,6 @@ void manager::init()
 
     this->m_hira = new Hira();
     this->m_hira->Init_Angle(this->path_angles);
-    // m_hira->Init)
-
-    // m_hira = {this->path_badmap, this->path_angles};
-    // m_hira.init();
 
     this->m_eventcut = {{1, 80}, {5, 80}, this->impact_parameter};
     this->hist_raw = {"raw", this->betacms, this->beam_rapidity};
@@ -224,16 +220,17 @@ void manager::run()
                 double py = fMomentum[n] * TMath::Sin(thetalab) * TMath::Sin(phi);
                 double pz = fMomentum[n] * TMath::Cos(thetalab);
 
-                particle particle = {fAId[n] - fZId[n], fZId[n], px, py, pz};
+                hira_particle particle = {fAId[n] - fZId[n], fZId[n], px, py, pz};
                 particle.init(this->betacms);
+                particle.set_detector_id(fnumtel[n], fnumcsi[n], fnumstripf[n], fnumstripb[n]);
 
                 if (this->m_hira->pass(particle))
                 {
 
-                    if (!this->m_hira->pass_badmap(fnumtel[n], fnumstripf[n], fnumstripb[n]))
-                    {
-                        continue;
-                    }
+                    // if (!this->m_hira->pass_badmap(fnumtel[n], fnumstripf[n], fnumstripb[n]))
+                    // {
+                    //     continue;
+                    // }
 
                     double EffGeo = this->m_hira->Get_GeoEff(particle.thetalab);
                     double ReactionEff = this->m_hira->Get_ReactionLost_CorEff(particle.zid, particle.aid, particle.ekinlab);
@@ -246,6 +243,8 @@ void manager::run()
                     {
                         ReactionEff = 0.001;
                     }
+                    particle.set_geometrical_efficiency(EffGeo);
+                    particle.set_reaction_efficiency(ReactionEff);
 
                     this->hist_raw.fill(particle);
                     if (EffGeo > 0)

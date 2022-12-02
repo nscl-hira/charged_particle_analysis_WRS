@@ -1,5 +1,5 @@
-#ifndef particle_h
-#define particle_h
+#ifndef hira_particle_h
+#define hira_particle_h
 
 #include <vector>
 #include <string>

@@ -6,6 +6,8 @@
 #include "hira/reactionlost.cpp"
 #include "hira/angles.cpp"
 
+#include "particle.hh"
+#include "hira_particle.hh"
 /**
  * @brief A wrapping class for handling all HiRA-related data.
  *
@@ -25,7 +27,8 @@ public:
     double Get_GeoEff(const double &theta);
     double Get_ReactionLost_CorEff(const int &z, const int &a, const double &ekinlab);
 
-    bool pass(const particle &particle);
+    // bool pass(const particle &particle);
+    bool pass(const hira_particle &particle);
     bool pass_badmap(const int &tel, const int &ef, const int &eb);
 
 private:

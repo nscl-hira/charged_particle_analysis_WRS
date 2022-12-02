@@ -98,8 +98,7 @@ bool Hira::pass_badmap(const int &tel, const int &ef, const int &eb)
     return (IsBad_Hira == 0 && IsBad_CsI == 0 && IsBad_StripX == 0 && IsBad_StripY == 0);
 }
 
-// bool Hira::pass(const particle &particle)
-bool Hira::pass(const particle &particle)
+bool Hira::pass(const hira_particle &particle)
 {
     std::string name = particle.name;
     if (this->ekinlabcut.count(name) == 0 || this->thetalabcut.count(name) == 0)
@@ -111,5 +110,21 @@ bool Hira::pass(const particle &particle)
 
     return (
         ekinlab >= this->ekinlabcut[name][0] && ekinlab <= this->ekinlabcut[name][1] &&
-        thetalab >= this->thetalabcut[name][0] && thetalab <= this->thetalabcut[name][1]);
+        thetalab >= this->thetalabcut[name][0] && thetalab <= this->thetalabcut[name][1] &&
+        this->pass_badmap(particle.fnumtel, particle.fnumstripf, particle.fnumstripb));
 }
+
+// bool Hira::pass(const particle &particle)
+// {
+//     std::string name = particle.name;
+//     if (this->ekinlabcut.count(name) == 0 || this->thetalabcut.count(name) == 0)
+//     {
+//         return false;
+//     }
+//     double ekinlab = particle.ekinlab / particle.aid;
+//     double thetalab = particle.thetalab;
+
+//     return (
+//         ekinlab >= this->ekinlabcut[name][0] && ekinlab <= this->ekinlabcut[name][1] &&
+//         thetalab >= this->thetalabcut[name][0] && thetalab <= this->thetalabcut[name][1]);
+// }
