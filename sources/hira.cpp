@@ -113,18 +113,3 @@ bool Hira::pass(const hira_particle &particle)
         thetalab >= this->thetalabcut[name][0] && thetalab <= this->thetalabcut[name][1] &&
         this->pass_badmap(particle.fnumtel, particle.fnumstripf, particle.fnumstripb));
 }
-
-// bool Hira::pass(const particle &particle)
-// {
-//     std::string name = particle.name;
-//     if (this->ekinlabcut.count(name) == 0 || this->thetalabcut.count(name) == 0)
-//     {
-//         return false;
-//     }
-//     double ekinlab = particle.ekinlab / particle.aid;
-//     double thetalab = particle.thetalab;
-
-//     return (
-//         ekinlab >= this->ekinlabcut[name][0] && ekinlab <= this->ekinlabcut[name][1] &&
-//         thetalab >= this->thetalabcut[name][0] && thetalab <= this->thetalabcut[name][1]);
-// }
