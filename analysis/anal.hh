@@ -65,6 +65,7 @@ struct histograms
     std::vector<std::string> atom_name = {"H", "He"};
 
     std::map<std::string, TH2D *> h2_pta_rapidity_lab;
+    std::map<std::string, TH1D *> h1_pcms;
     std::map<std::string, TH1D *> h1_multi;
 
     void init();
@@ -81,6 +82,10 @@ void histograms::init()
         this->h2_pta_rapidity_lab[name] = new TH2D(("h2_pta_rapidity_lab_" + this->mode + "_" + name).c_str(), "", 100, 0, 1, 800, 0, 800);
         this->h2_pta_rapidity_lab[name]->Sumw2();
         this->h2_pta_rapidity_lab[name]->SetDirectory(0);
+
+        this->h1_pcms[name] = new TH1D(("h1_pcms_" + this->mode + "_" + name).c_str(), "", 800, 0, 800);
+        this->h1_pcms[name]->Sumw2();
+        this->h1_pcms[name]->SetDirectory(0);
     }
     for (auto &name : this->atom_name)
     {
@@ -108,6 +113,8 @@ void histograms::fill(const hira_particle &particle, const double &weight)
     }
 
     this->h2_pta_rapidity_lab[particle.name]->Fill(particle.rapidity_lab / this->beam_rapidity, particle.pt / particle.aid, weight);
+
+    this->h1_pcms[particle.name]->Fill(particle.pcms / particle.aid, weight);
 }
 
 void histograms::normalize(const double &norm)
@@ -116,6 +123,12 @@ void histograms::normalize(const double &norm)
     {
         h2->Scale(norm);
     }
+
+    for (auto &[name, h1] : this->h1_pcms)
+    {
+        h1->Scale(norm);
+    }
+
     for (auto &[name, h1] : this->h1_multi)
     {
         h1->Scale(norm);
@@ -127,6 +140,11 @@ void histograms::write()
     for (auto &[name, h2] : this->h2_pta_rapidity_lab)
     {
         h2->Write();
+    }
+
+    for (auto &[name, h1] : this->h1_pcms)
+    {
+        h1->Write();
     }
     for (auto &[name, h1] : this->h1_multi)
     {
