@@ -1,22 +1,7 @@
-
-
-# Ignore all
-*
-
-# Unignore all with extensions
-!*.*
-
-# Unignore all dirs
-!*/
-
-#Unignore makefiles
-!**/Makefile
-!**/makefile
-
-
 # py env folder 
-**/env
-**/figures
+env_amd
+__pycache__/
+.ipynb_checkpoints/
 
 # Compiled Object files
 **/*.o
@@ -33,24 +18,24 @@
 **/*.mod
 **/*.smod
 
-
-
-# Result, Data, old files
-**/*.root
-**/*.csv
-**/data
-**/old
-**/trials
-**/output/*
-
-# bash scripts
-**/*.sh
-
 # temp files
-**/.directory
-**/*.log
-**/*.png
+.directory
+*.log
 
-.vscode/settings.json
-Ana_Isoscaling
-src
+# vscode setting
+.vscode
+
+# results
+result
+
+# executable 
+*.exe
+
+# legacy
+upstream
+
+# out-dated files
+old
+bin
+
+
