@@ -19,11 +19,11 @@ public:
 
     double GetTheta(const int &tel, const int &ef, const int &eb);
     double GetPhi(const int &tel, const int &ef, const int &eb);
-    double Get_GeoEff(const double &theta);
+    double Get_GeometricEfficiency(const double &theta);
     double Get_ReactionLost_CorEff(const int &z, const int &a, const double &ekinlab);
 
     bool Pass(const Particle &particle);
-    bool _pass_badmap(const int &tel, const int &ef, const int &eb);
+    bool IsGoodStrip(const int &tel, const int &ef, const int &eb);
 
 private:
     fs::path mDir_HiRAStripMap;
