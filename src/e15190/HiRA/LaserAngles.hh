@@ -17,7 +17,7 @@ protected:
 
 public:
     LaserAngles(const std::string &path);
-    ~LaserAngles(){};
+    ~LaserAngles();
     double ThetaLab[fNumTele][fNumStripf][fNumStripf]; //[HiraIndex][X Index][Y Index]
     double Phi[fNumTele][fNumStripf][fNumStripf];      //[HiraIndex][X Index][Y Index]
 

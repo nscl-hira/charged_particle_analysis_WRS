@@ -21,11 +21,11 @@ HiRAStripMap::HiRAStripMap(const std::string &path, const std::string &version)
         }
     }
 
-    Read_BadStripMap_Strip(Form("%s/BadStripMap_%s/Hira_BadStripMap_Strip_%s.dat", this->BadStripMapPath.c_str(), this->BadStripMapVersion.c_str(), this->BadStripMapVersion.c_str()));
+    Read_BadStripMap_Strip(Form("%s/BadMap_%s/Hira_BadMap_Strip_%s.dat", this->BadStripMapPath.c_str(), this->BadStripMapVersion.c_str(), this->BadStripMapVersion.c_str()));
 
-    Read_BadStripMap_CsI(Form("%s/BadStripMap_%s/Hira_BadStripMap_CsI_%s.dat", this->BadStripMapPath.c_str(), this->BadStripMapVersion.c_str(), this->BadStripMapVersion.c_str()));
+    Read_BadStripMap_CsI(Form("%s/BadMap_%s/Hira_BadMap_CsI_%s.dat", this->BadStripMapPath.c_str(), this->BadStripMapVersion.c_str(), this->BadStripMapVersion.c_str()));
 
-    Read_BadStripMap_Tele(Form("%s/BadStripMap_%s/Hira_BadStripMap_Tele_%s.dat", this->BadStripMapPath.c_str(), this->BadStripMapVersion.c_str(), this->BadStripMapVersion.c_str()));
+    Read_BadStripMap_Tele(Form("%s/BadMap_%s/Hira_BadMap_Tele_%s.dat", this->BadStripMapPath.c_str(), this->BadStripMapVersion.c_str(), this->BadStripMapVersion.c_str()));
 }
 
 HiRAStripMap::~HiRAStripMap() {}
@@ -36,8 +36,9 @@ void HiRAStripMap::Read_BadStripMap_Strip(const std::string &path)
     std::ifstream infile(path.c_str());
     if (!infile)
     {
-        std::cout << "file not found." << std::endl;
+        std::cerr << path << " not found." << std::endl;
         return;
+        // std::exit(1);
     }
     infile.ignore(99, '\n');
     while (infile)

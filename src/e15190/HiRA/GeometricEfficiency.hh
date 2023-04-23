@@ -4,11 +4,14 @@
 #include <iostream>
 #include <fstream>
 #include <array>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 #include "TF1.h"
 #include "TH1D.h"
 #include "TH2D.h"
 #include "TMath.h"
+#include "TFile.h"
 
 class GeometricEfficiency
 {

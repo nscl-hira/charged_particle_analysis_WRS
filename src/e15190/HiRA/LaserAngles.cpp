@@ -34,3 +34,5 @@ LaserAngles::LaserAngles(const std::string &path)
         this->Phi[HiraIndex][StripXIndex][StripYIndex] = phi;
     }
 }
+
+LaserAngles::~LaserAngles() { ; }
