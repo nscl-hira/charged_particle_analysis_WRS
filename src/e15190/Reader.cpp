@@ -13,7 +13,17 @@ Reader::Reader(const std::string &reaction, const std::string &dir_data, const s
     for (int iRun = 0; iRun < NumberOfRun; iRun++)
     {
         int RunIndex = mRunInfo->GetRunIndex(mReaction, iRun);
-        std::string path_file = Form("%s/CalibratedData_%d.root", dir_data.c_str(), RunIndex);
+
+        std::string path_file = Form(
+            "%s/%i%s%i%s_%.0fMeVu/CalibratedData_%d.root",
+            dir_data.c_str(),
+            mBeamA,
+            mBeamNuclei.c_str(),
+            mTargetA,
+            mTargetNuclei.c_str(),
+            mBeamEnergy,
+            RunIndex);
+
         mChains[iRun] = new TChain("E15190");
         mChains[iRun]->AddFile(path_file.c_str());
         mRunIndex[iRun] = RunIndex;
@@ -110,19 +120,4 @@ void Reader::Initialize_Chain(const int &iRun)
 int Reader::GetEntry(const int &ievt)
 {
     return mChains[mCurrentRun]->GetEntry(ievt);
-
-    // mEntry["tdc_trigger_uball_ds"] = std::any_cast<double>(this->tdc_trigger_uball_ds);
-    // mEntry["tdc_trigger_uball_hira"] = std::any_cast<double>(this->tdc_trigger_uball_hira);
-    // mEntry["tdc_trigger_uball_nw"] = std::any_cast<double>(this->tdc_trigger_uball_nw);
-
-    // mEntry["uball_multi"] = std::any_cast<int>(this->uball_multi);
-    // mEntry["hira_multi"] = std::any_cast<int>(this->hira_multi);
-    // mEntry["hira_A"] = std::any_cast<int *>(this->hira_A);
-    // mEntry["hira_Z"] = std::any_cast<int *>(this->hira_Z);
-    // mEntry["hira_pmag"] = std::any_cast<double *>(this->hira_pmag);
-    // mEntry["hira_numtel"] = std::any_cast<unsigned int *>(this->hira_numtel);
-    // mEntry["hira_numstripf"] = std::any_cast<unsigned int *>(this->hira_numstripf);
-    // mEntry["hira_numstripb"] = std::any_cast<unsigned int *>(this->hira_numstripb);
-    // mEntry["hira_numcsi"] = std::any_cast<unsigned int *>(this->hira_numcsi);
-    // return 0;
 }
