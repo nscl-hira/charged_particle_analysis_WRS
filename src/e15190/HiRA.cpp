@@ -121,7 +121,7 @@ bool HiRA::Pass(const Particle &particle)
         return false;
     }
     double ekinlab = particle.kinergy_lab / (particle.N + particle.Z);
-    double thetalab = particle.theta_lab;
+    double thetalab = particle.theta_lab * TMath::RadToDeg();
 
     return (
         ekinlab >= this->mKinergyLabCut[name][0] && ekinlab <= this->mKinergyLabCut[name][1] &&
