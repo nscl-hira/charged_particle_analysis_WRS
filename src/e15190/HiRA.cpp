@@ -120,7 +120,7 @@ bool HiRA::Pass(const Particle &particle)
     {
         return false;
     }
-    double ekinlab = particle.kinergy_lab / (particle.N + particle.Z);
+    double ekinlab = particle.kinergy_lab / particle.A;
     double thetalab = particle.theta_lab * TMath::RadToDeg();
 
     return (
