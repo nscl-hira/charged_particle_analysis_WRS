@@ -27,6 +27,7 @@ int main(int argc, char *argv[])
     HiRA_detector->Initialize_LaserAngles(argparser.path_pixel_angles);
 
     int Runs = reader->GetRuns();
+    std::cout << "Number of runs: " << Runs << std::endl;
 
     double Normalization = 0;
     int NumberOfPassedEvents = 0;
@@ -37,9 +38,11 @@ int main(int argc, char *argv[])
         std::string badmap_version = reader->mBadMapVersion[iRun];
         std::string trigger = reader->mTriggerCondition[iRun];
 
+        std::cout << "Run: " << RunIndex << " " << trigger << " " << badmap_version << std::endl;
+
         if (!(trigger == "uBallDS_uBallHira_uBallNW" || trigger == "uBallDS_uBallHira"))
         {
-            return 0;
+            continue;
         }
 
         HiRA_detector->Initialize_StripMap(argparser.dir_geoeff, badmap_version);
@@ -92,7 +95,6 @@ int main(int argc, char *argv[])
                 {
                     continue;
                 }
-
                 double thetalab = HiRA_detector->GetTheta(hira_numtel[ip], hira_numstripf[ip], hira_numstripb[ip]) * TMath::DegToRad();
 
                 double phi = HiRA_detector->GetPhi(hira_numtel[ip], hira_numstripf[ip], hira_numstripb[ip]) * TMath::DegToRad();
@@ -101,30 +103,40 @@ int main(int argc, char *argv[])
                 double py = hira_pmag[ip] * TMath::Sin(thetalab) * TMath::Sin(phi);
                 double pz = hira_pmag[ip] * TMath::Cos(thetalab);
 
-                Particle particle = {hira_A[ip] - hira_Z[ip], hira_Z[ip], px, py, pz};
-                particle.initialize(betacms, rapidity_beam, ame.GetMass(particle.Z, particle.N + particle.Z));
+                Particle particle(
+                    hira_A[ip] - hira_Z[ip],
+                    hira_Z[ip],
+                    px / hira_A[ip],
+                    py / hira_A[ip],
+                    pz / hira_A[ip],
+                    ame.GetMass(hira_Z[ip], hira_A[ip]),
+                    "lab");
+
+                particle.Initialize(betacms, rapidity_beam);
 
                 if (HiRA_detector->Pass(particle))
                 {
-                    double EffGeo = HiRA_detector->Get_GeometricEfficiency(particle.theta_lab);
-                    double ReactionEff = HiRA_detector->Get_ReactionLost_CorEff(particle.Z, particle.Z + particle.N, particle.kinergy_lab);
+                    double EffGeo = HiRA_detector->Get_GeometricEfficiency(particle.theta_lab * TMath::RadToDeg());
+                    double ReactionEff = HiRA_detector->Get_ReactionLost_CorEff(particle.Z, particle.A, particle.kinergy_lab);
 
                     hist_raw->Fill(particle, 1.);
 
-                    if (EffGeo > 0 && EffGeo < 0.001)
+                    if (EffGeo > 0.)
                     {
-                        EffGeo = 0.001;
                         hist_geoeff->Fill(particle, 1. / EffGeo);
                     }
-                    if (ReactionEff > 0 && ReactionEff < 0.001)
+                    if (EffGeo > 0. && ReactionEff > 0.)
                     {
-                        ReactionEff = 0.001;
                         hist_alleff->Fill(particle, 1. / EffGeo / ReactionEff);
                     }
                 }
             }
         }
+        reader->Clear_Chain(iRun);
     }
+
+    std::cout << "Number of passed events: " << NumberOfPassedEvents << std::endl;
+    std::cout << "Normalization: " << Normalization << std::endl;
 
     Normalization *= 300.;
     hist_raw->Normalize(1. / Normalization);
@@ -148,14 +160,19 @@ std::map<int, double> Get_ImpactParameter_Map(const std::string &path_bimp)
     double buffer;
     infile.ignore(99, '\n');
 
-    while (infile >> multiplicity)
+    while (infile >> multiplicity >> reduced_bimp)
     {
-        infile >> reduced_bimp;
         for (int _ = 0; _ < 3; _++)
         {
             infile >> buffer;
         }
         ReducedImpactParameter[multiplicity] = reduced_bimp;
+    }
+
+    int MAX_MULTIPLICITY = 100;
+    for (int i = multiplicity; i <= MAX_MULTIPLICITY; i++)
+    {
+        ReducedImpactParameter[i] = reduced_bimp;
     }
     return ReducedImpactParameter;
 }
