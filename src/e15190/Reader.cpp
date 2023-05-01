@@ -5,7 +5,6 @@ Reader::Reader(const std::string &reaction, const std::string &dir_data, const s
 
     mDirData = dir_data;
     mCurrentRun = 0;
-    mCurrentEvent = 0;
 
     mRunInfo = new RunInfo(path_runinfo.c_str());
 
@@ -100,6 +99,7 @@ void Reader::_Initialize_ReactionSystem(const std::string &reaction)
 void Reader::Initialize_Chain(const int &iRun)
 {
     TChain *chain = mChains[iRun];
+    mCurrentRun = iRun;
     chain->SetBranchAddress("TDCTriggers.uBall_DS_TRG", &this->tdc_trigger_uball_ds);
     chain->SetBranchAddress("TDCTriggers.uBallHiRA_TRG", &this->tdc_trigger_uball_hira);
     chain->SetBranchAddress("TDCTriggers.uBallNW_TRG", &this->tdc_trigger_uball_nw);
@@ -115,6 +115,12 @@ void Reader::Initialize_Chain(const int &iRun)
     chain->SetBranchAddress("HiRA.fnumstripb", &this->hira_numstripb[0]);
     chain->SetBranchAddress("HiRA.fnumcsi", &this->hira_numcsi[0]);
     return;
+}
+
+void Reader::Clear_Chain(const int &iRun)
+{
+    delete mChains[iRun];
+    mChains[iRun] = 0;
 }
 
 int Reader::GetEntry(const int &ievt)

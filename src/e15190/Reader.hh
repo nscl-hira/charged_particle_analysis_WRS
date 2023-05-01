@@ -32,6 +32,7 @@ public:
 
     void _Initialize_ReactionSystem(const std::string &reaction);
     void Initialize_Chain(const int &iRun);
+    void Clear_Chain(const int &iRun);
 
     std::string GetBeamNuclei() { return mBeamNuclei; }
     std::string GetTargetNuclei() { return mTargetNuclei; }
@@ -83,7 +84,6 @@ private:
     double mBeamEnergy;
 
     int mCurrentRun;
-    int mCurrentEvent;
 
 protected:
     const static int MAX_MULTI = 128;
