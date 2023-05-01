@@ -122,10 +122,4 @@ public:
 
 protected:
     std::vector<option> options;
-
-    // fs::path DIR_DATA = "/data/HiRA_Cali";
-    // fs::path DIR_GEOEFF = PROJECT_DIR / "database/e15190/GeoEff";
-    // fs::path PATH_PIXEL_ANGLES = PROJECT_DIR / "database/e15190/Cal_PixelAngle/PixelAngle_BeamPos_0_0_0.dat";
-    // fs::path PATH_BIMP = PROJECT_DIR / "database/e15190/microball/bimp_mapping/Ca48Ni64E140.dat";
-    // fs::path PATH_RUNINFO = PROJECT_DIR / "database/e15190/RunInfo.dat";
 };
