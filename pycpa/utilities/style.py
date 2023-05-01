@@ -1,6 +1,6 @@
 import json
 import pathlib
-from pyamd import DATABASE
+from pycpa import DATABASE
 
 import pathlib
 import json
