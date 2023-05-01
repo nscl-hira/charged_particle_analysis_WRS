@@ -59,5 +59,10 @@ double GeometricEfficiency::Get_GeometricEfficiency(const double &Theta_Lab)
 {
     int BinIndex = h1_collection["h1_BadMap_Theta_Lab_Eff"]->FindBin(Theta_Lab);
     double Eff = h1_collection["h1_BadMap_Theta_Lab_Eff"]->GetBinContent(BinIndex);
+
+    if (Eff > 0 && Eff < 0.001)
+    {
+        Eff = 0.001;
+    }
     return Eff;
 }

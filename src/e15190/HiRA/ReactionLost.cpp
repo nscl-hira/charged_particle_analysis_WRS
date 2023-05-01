@@ -32,6 +32,7 @@ void ReactionLost::Init_Sean()
 double ReactionLost::Get_ReactionLost_CorEff(const int &Z, const int &A, const double &Ekin_Total_Lab)
 {
     int Index = -1;
+    double eff;
     for (int iPID = 0; iPID < f1_ReactionLost_CorEff.size(); iPID++)
     {
         if (Z == ReactionLost_Cor_Z[iPID] && A == ReactionLost_Cor_A[iPID])
@@ -42,10 +43,16 @@ double ReactionLost::Get_ReactionLost_CorEff(const int &Z, const int &A, const d
     }
     if (Index != -1)
     {
-        return f1_ReactionLost_CorEff[Index]->Eval(Ekin_Total_Lab);
+        eff = f1_ReactionLost_CorEff[Index]->Eval(Ekin_Total_Lab);
     }
     else
     {
-        return f1_ReactionLost_CorEff[ReactionLost_Cor_ParticleNum - 1]->Eval(Ekin_Total_Lab);
+        eff = f1_ReactionLost_CorEff[ReactionLost_Cor_ParticleNum - 1]->Eval(Ekin_Total_Lab);
     } // the others are set to same with the last particle( always is alpha ).
+
+    if (eff > 0 && eff < 0.001)
+    {
+        eff = 0.001;
+    }
+    return eff;
 }
