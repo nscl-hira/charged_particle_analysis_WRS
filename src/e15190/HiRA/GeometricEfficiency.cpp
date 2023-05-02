@@ -48,11 +48,6 @@ void GeometricEfficiency::ReadGeometricEfficiencyHistogram(const std::string &Ro
     {
         this->h2_collection[name] = (TH2D *)f1_Results->Get(name.c_str());
     }
-
-    if (this->h1_collection.count("h1_BadMap_Theta_Lab_Eff") == 1)
-    {
-        std::cout << "Get the GeometricEfficiency Correction histogram!" << std::endl;
-    }
 }
 
 double GeometricEfficiency::Get_GeometricEfficiency(const double &Theta_Lab)
