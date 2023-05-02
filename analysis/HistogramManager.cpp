@@ -73,7 +73,7 @@ void HistogramManager::_Initialize()
 {
     for (auto &p : this->mParticlesNames)
     {
-        this->h2_pta_rapidity_lab[p] = new TH2D(("h2_pta_rapidity_lab_" + mStr + "_" + p).c_str(), "", 100, 0, 1, 800, 0, 800);
+        this->h2_pta_rapidity_lab[p] = new TH2D(("h2_pta_rapidity_lab_" + mStr + "_" + p).c_str(), "", 150, 0, 1.5, 800, 0, 800);
         this->h2_pta_rapidity_lab[p]->Sumw2();
         this->h2_pta_rapidity_lab[p]->SetDirectory(0);
     }
