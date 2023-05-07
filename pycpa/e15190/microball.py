@@ -5,14 +5,16 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import curve_fit
 
-from pyamd import DATABASE
-from pyamd.utilities import ame
+from pycpa import DATABASE
+from pycpa.utilities import ame
 ame_table = ame.AME()
+
 
 class microball:
     """ A class to handle the geometry and acceptance (in MeV for each ring) of the microball detector.
     """
     MAX_A = 100
+
     def __init__(self, path=None, coordinate='uball'):
         """
         Parameters
@@ -24,8 +26,9 @@ class microball:
             'hira' : rotate :math: `\phi` angle by 90 degrees.
         """
         if path is None:
-            path = pathlib.Path(DATABASE, 'e15190/microball/acceptance/geometry.dat')
-        
+            path = pathlib.Path(
+                DATABASE, 'e15190/microball/acceptance/geometry.dat')
+
         self.coordinate = coordinate
         self.geometry = self._read_geometry(path, coordinate)
 
@@ -42,7 +45,8 @@ class microball:
             Reaction name, e.g. `Ca48Ni64E140`
         """
         if path is None:
-            path = pathlib.Path(DATABASE, 'e15190/microball/acceptance/config.dat')
+            path = pathlib.Path(
+                DATABASE, 'e15190/microball/acceptance/config.dat')
 
         self.configuration = dict()
         with open(str(path), 'r') as f:
@@ -61,7 +65,7 @@ class microball:
                     self.geometry.drop((ring, det))
 
         return
-    
+
     def _read_geometry(self, path, coordinate):
         """ Read the geometry file.
         Parameters
@@ -77,11 +81,12 @@ class microball:
             A pandas DataFrame contains the geometry information.
         """
 
-        df = pd.read_csv(str(path), delim_whitespace=True).set_index(['ring', 'det'])
+        df = pd.read_csv(str(path), delim_whitespace=True).set_index(
+            ['ring', 'det'])
         if coordinate.lower() == 'hira':
             df['phi_min'] += 90.
             df['phi_max'] += 90.
-            
+
         for i, row in df.iterrows():
             if row['phi_min'] >= 360:
                 df.at[i, 'phi_min'] -= 360
@@ -90,20 +95,20 @@ class microball:
                 df.at[i, 'phi_max'] -= 360
 
         return df
-    
+
     def get_theta_range(self, ring, det):
         return self.geometry.loc[ring, det]['theta_min'], self.geometry.loc[ring, det]['theta_max']
 
     def get_phi_range(self, ring, det):
         return self.geometry.loc[ring, det]['phi_min'], self.geometry.loc[ring, det]['phi_max']
-    
+
     def get_ring(self, theta):
         """ Get the ring number from `self.geometry` given theta. """
         return self.geometry.query('theta_min <= @theta < theta_max').index.get_level_values('ring').values[0]
+
     def get_ring_and_detectorID(self, theta, phi):
         """ Get the ring number and detector ID from `self.geometry` given theta and phi. """
         return self.geometry.query('theta_min <= @theta < theta_max and phi_min <= @phi < phi_max').index.values[0]
-
 
     def set_threshold(self, ring=2, path=None, maxA=None):
         """ Set the threshold energy (MeV) for the specified ring according to the threshold file. In the file, the first column is the `A` of the target, the second column is the `Z` of the target, and the third column is the threshold energy (MeV). If the `A` and `Z` of the target are not found in the file, the threshold energy will be interpolated from the nearest `A` and `Z` values. 
@@ -127,23 +132,25 @@ class microball:
         set_threshold(8, threshold_Sn_23mgcm2.dat)
         """
         if path is None:
-            path = pathlib.Path(DATABASE, 'e15190/microball/acceptance/threshold_Sn_65mgcm2.dat')
-        
-        df = pd.read_csv(str(path), delim_whitespace=True, usecols=[0,1,2])
+            path = pathlib.Path(
+                DATABASE, 'e15190/microball/acceptance/threshold_Sn_65mgcm2.dat')
+
+        df = pd.read_csv(str(path), delim_whitespace=True, usecols=[0, 1, 2])
         df.columns = ['A', 'Z', 'kinergy_MeV']
 
         maxA = self.MAX_A if maxA is None else maxA
         A = np.arange(1, maxA+1)
         # f = lambda x, a, b, c: a * x ** 2 + b * x + c
-        f = lambda x, a, b: a * x + b
-        
+        def f(x, a, b): return a * x + b
+
         threshold = dict()
         for Z, subdf in df.groupby('Z'):
             x = subdf['A'].to_numpy()
             y = subdf['kinergy_MeV'].to_numpy()
 
             popt, _ = curve_fit(f, x, y)
-            missing_A = np.array([a for a in A if not a in x and ame_table.is_physical(a-Z, Z)])
+            missing_A = np.array(
+                [a for a in A if not a in x and ame_table.is_physical(a-Z, Z)])
             threshold[Z] = pd.concat([subdf, pd.DataFrame({
                 'A': missing_A,
                 'Z': Z,
@@ -158,14 +165,14 @@ class microball:
             raise ValueError('A must be greater than or equal to Z.')
         if A < 0 or Z < 0:
             raise ValueError('A and Z must be greater than or equal to 0.')
-        
+
         query = self.threshold[ring].query('A == @A and Z == @Z')
         if len(query) == 0:
             raise ValueError('Not found the specified target.')
         if len(query) > 1:
             warnings.warn('Found more than one target. Use the first one.')
         return query['kinergy_MeV'].values[0]
-    
+
     def is_inside(self, theta, phi):
         """ Check if the specified theta and phi are inside the microball. """
         return self.get_ring_and_detectorID(theta, phi) is not None
@@ -178,7 +185,7 @@ class microball:
         """ Check if the particle is detected by microball. """
         ring = self.get_ring(theta)
         return self.is_inside(theta, phi) and self.is_punchthrough(ring, A, Z, E)
-    
+
     def is_inside_cpp(self, theta_br='theta_deg', phi_br='phi_deg', fcn_name='is_inside'):
         """ Construct a cpp function code snipet to be fed to `ROOT.RDataFrame.Define`
         """
@@ -199,15 +206,16 @@ class microball:
             }}
         ''')
         return script
-    
+
     def get_ring_cpp(self, theta_br='theta_deg', fcn_name='get_ring'):
 
-        df = self.geometry.reset_index()[['ring', 'theta_min', 'theta_max']].drop_duplicates().reset_index(drop=True)
+        df = self.geometry.reset_index(
+        )[['ring', 'theta_min', 'theta_max']].drop_duplicates().reset_index(drop=True)
 
         mapping = {
-            row['ring'] : (row['theta_min'], row['theta_max']) for _, row in df.iterrows()
+            row['ring']: (row['theta_min'], row['theta_max']) for _, row in df.iterrows()
         }
-        
+
         if_else_statement = ''
         for i, (key, value) in enumerate(mapping.items()):
             if i == 0:
@@ -236,16 +244,14 @@ class microball:
             }}
         '''
         return script
-    
 
     def get_CsI_cpp(self, theta_br='thete_deg', phi_br='phi_deg', fcn_name='get_CsI'):
         df = self.geometry.reset_index()
         detector_id = [f"""{{ 
            {{ {row['theta_min']}, {row['theta_max']}, {row['phi_min']}, {row['phi_max']} }}, {{ {row['ring']:.0f}, {row['det']:.0f} }}
         }}""" for _, row in df.iterrows()]
-        
+
         detector_id = ',\n'.join(list(map(inspect.cleandoc, detector_id)))
-        
 
         script = f'''
             std::map<std::tuple<double, double, double, double>, std::tuple<int, int>> detector_id = {{
@@ -274,7 +280,6 @@ class microball:
         '''
         return script
 
-
     def get_threshold_data_cpp(self):
 
         df = self.threshold
@@ -292,8 +297,9 @@ class microball:
         for r, subdf in df.items():
             subdf['ring'] = r
         df = pd.concat([subdf for subdf in self.threshold.values()])
-        
-        df.to_csv(fname, columns=['ring', 'A', 'Z', 'kinergy_MeV'], index=False, sep=' ')
+
+        df.to_csv(fname, columns=['ring', 'A', 'Z',
+                  'kinergy_MeV'], index=False, sep=' ')
         return
 
     def is_punchthrough_cpp(self, ring_br='ring', A_br='A', Z_br='Z', E_br='kinergy', fcn_name='is_punchthrough'):
@@ -319,6 +325,7 @@ class microball:
         '''
         return script
 
+
 if __name__ == '__main__':
     mb = microball()
     mb.configurate(reaction='Ca48Ni64E140')
@@ -332,6 +339,7 @@ if __name__ == '__main__':
         8: 'threshold_Sn_23mgcm2.dat',
     }
     for ring, filename in threshold_map.items():
-        mb.set_threshold(ring, pathlib.Path(DATABASE, 'e15190/microball/acceptance') / filename)
+        mb.set_threshold(ring, pathlib.Path(
+            DATABASE, 'e15190/microball/acceptance') / filename)
 
     mb.generate_threshold_data()

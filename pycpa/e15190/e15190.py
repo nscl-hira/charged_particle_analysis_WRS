@@ -5,8 +5,8 @@ from astropy import units
 from collections import defaultdict
 from typing import Literal
 
-from pyamd import PROJECT_DIR
-from pyamd.utilities import ame
+from pycpa import PROJECT_DIR
+from pycpa.utilities import ame
 ame_table = ame.AME()
 
 class Particle:

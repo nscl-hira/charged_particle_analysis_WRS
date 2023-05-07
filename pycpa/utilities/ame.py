@@ -1,4 +1,4 @@
-from pyamd import PROJECT_DIR
+from pycpa import PROJECT_DIR
 
 import pandas as pd
 import pathlib
