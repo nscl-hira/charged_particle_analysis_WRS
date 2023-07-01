@@ -2,35 +2,6 @@
 
 RunInfo::RunInfo(const std::string &path)
 {
-    for (unsigned int i = 0; i < this->beam_mass.size(); i++)
-    {
-        this->beam_mass[i] = this->beam_mass[i] * this->mass_1u;
-    }
-    for (unsigned int i = 0; i < this->target_mass.size(); i++)
-    {
-        this->target_mass[i] = this->target_mass[i] * this->mass_1u;
-    }
-
-    for (unsigned int beam_id = 0; beam_id < this->beam_name.size(); beam_id++)
-    {
-        for (unsigned int target_id = 0; target_id < this->target_name.size(); target_id++)
-        {
-            for (unsigned int en_id = 0; en_id < this->beam_energy.size(); en_id++)
-            {
-
-                double beam_ke = this->beam_energy[en_id] * this->beam_A[beam_id];
-                double beam_energy_tot = beam_ke + this->beam_mass[beam_id];
-                double mom_beam = TMath::Sqrt(pow(beam_ke, 2.) + 2. * beam_ke * this->beam_mass[beam_id]);
-                double gamma = beam_energy_tot / this->beam_mass[beam_id];
-
-                std::string system = Form("%s%sE%i", this->beam_name[beam_id].c_str(), this->target_name[target_id].c_str(), this->beam_energy[en_id]);
-
-                this->BetaCMS[system] = mom_beam / (gamma * this->beam_mass[beam_id] + this->target_mass[target_id]);
-                this->BeamRapidity[system] = 0.5 * TMath::Log((beam_energy_tot + mom_beam) / (beam_energy_tot - mom_beam));
-            }
-        }
-    }
-
     auto remove_space = [](std::string &line) -> void
     {
         while (line[0] == ' ')
