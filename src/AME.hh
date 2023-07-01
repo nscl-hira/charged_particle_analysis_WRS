@@ -20,11 +20,14 @@ public:
     ~AME() {}
 
     void ReadAMETable(const std::string &filename = "");
+    void PrintTable(const int &head = 10) const;
 
     // We don't want getters to be thread-safe in our case.
     std::optional<double> GetMass(const std::string &symbol) const;
     std::optional<double> GetMass(const int &Z, const int &A) const;
     std::optional<double> _GetMassUnphysical(const int &Z, const int &A) const;
+
+    std::optional<double> GetBindingEnergyPerNucleon(const std::string &symbol) const;
 
     std::optional<std::pair<int, int>> GetZA(const std::string &symbol) const;
     std::optional<int> GetA(const std::string &symbol) const;
@@ -53,6 +56,7 @@ private:
     std::mutex m_mutex;
     bool IsLoaded;
     std::map<std::string, double> MassTable;
+    std::map<std::string, double> BindingEnergyTable; // per nucleon
     std::map<std::string, std::pair<int, int>> ZATable;
     std::map<std::pair<int, int>, std::string> SymbolTable;
 
