@@ -5,9 +5,7 @@ HiRA::HiRA()
     mHiRAStripMapReader = 0;
     mGeoEffReader = 0;
     mLaserAnglesReader = 0;
-    mReactionLostReader = new ReactionLost();
-    mKinergyLabCut = mDefaultKinergyLabCut;
-    mThetaLabCut = mDefaultThetaLabCut;
+    mReactionLostReader = 0;
 }
 HiRA::~HiRA()
 {
@@ -31,6 +29,7 @@ void HiRA::Initialize_LaserAngles(const std::string &path)
     }
     mLaserAnglesReader = new LaserAngles(path);
 }
+
 void HiRA::Initialize_StripMap(const std::string &path, const std::string &version)
 {
     if (mHiRAStripMapReader)
@@ -45,6 +44,37 @@ void HiRA::Initialize_StripMap(const std::string &path, const std::string &versi
     mHiRAStripMapReader = new HiRAStripMap(path, version);
 }
 
+void HiRA::Initalize_Coverage(const std::string &path)
+{
+    json hira_kinematic_cut;
+    std::ifstream json_file(path.c_str());
+    json_file >> hira_kinematic_cut;
+
+    auto is_inside = [this](const std::string &key) -> bool
+    {
+        return std::find(this->ACCEPTED_PARTICLES.begin(), this->ACCEPTED_PARTICLES.end(), key) != this->ACCEPTED_PARTICLES.end();
+    };
+
+    for (auto &[name, array] : hira_kinematic_cut["thetalab"].items())
+    {
+        if (!is_inside(name))
+            continue;
+        std::string ame_name = AME::get_instance()->GetSymbol(name).value();
+        mThetaLabCut[ame_name] = array;
+    }
+
+    for (auto &[name, array] : hira_kinematic_cut["kinergy_per_nucleon"].items())
+    {
+        if (!is_inside(name))
+            continue;
+        std::string ame_name = AME::get_instance()->GetSymbol(name).value();
+        mThetaLabCut[ame_name] = array;
+    }
+
+    json_file.close();
+    return;
+}
+
 void HiRA::Initialize_GeometricEfficiency(const std::string &path)
 {
     if (mGeoEffReader)
@@ -53,6 +83,15 @@ void HiRA::Initialize_GeometricEfficiency(const std::string &path)
     }
     mGeoEffReader = new GeometricEfficiency();
     mGeoEffReader->ReadGeometricEfficiencyHistogram(path.c_str());
+}
+
+void HiRA::Initialize_ReactionLost(const std::string &path)
+{
+    if (mReactionLostReader)
+    {
+        delete mReactionLostReader;
+    }
+    mReactionLostReader = new ReactionLost(path);
 }
 
 double HiRA::GetTheta(const int &tel, const int &ef, const int &eb)
@@ -90,40 +129,29 @@ bool HiRA::IsGoodStrip(const int &tel, const int &ef, const int &eb)
 
 bool HiRA::Pass(const Particle &particle)
 {
-    std::string name = "";
-    if (particle.Z == 1 && particle.N == 0)
-    {
-        name = "p";
-    }
-    else if (particle.Z == 1 && particle.N == 1)
-    {
-        name = "d";
-    }
-    else if (particle.Z == 1 && particle.N == 2)
-    {
-        name = "t";
-    }
-    else if (particle.Z == 2 && particle.N == 1)
-    {
-        name = "3He";
-    }
-    else if (particle.Z == 2 && particle.N == 2)
-    {
-        name = "4He";
-    }
-    else
+    auto ame = AME::get_instance();
+    int A = particle.Z + particle.N;
+    if (!ame->IsPhysical(particle.Z, particle.A))
     {
         return false;
     }
+    std::string ame_name = AME::get_instance()->GetSymbol(particle.Z, particle.A).value();
 
-    if (this->mKinergyLabCut.count(name) == 0 || this->mThetaLabCut.count(name) == 0)
+    if (this->mKinergyLabCut.count(ame_name) == 0 || this->mThetaLabCut.count(ame_name) == 0)
     {
         return false;
     }
     double ekinlab = particle.kinergy_lab / particle.A;
     double thetalab = particle.theta_lab * TMath::RadToDeg();
 
+    auto accepted = [](const double &v, const std::array<double, 2> &arr) -> bool
+    {
+        return v >= arr[0] && v <= arr[1];
+    };
+
     return (
-        ekinlab >= this->mKinergyLabCut[name][0] && ekinlab <= this->mKinergyLabCut[name][1] &&
-        thetalab >= this->mThetaLabCut[name][0] && thetalab <= this->mThetaLabCut[name][1]);
+        accepted(ekinlab, this->mKinergyLabCut[ame_name]) &&
+        accepted(thetalab, this->mThetaLabCut[ame_name])
+        //
+    );
 }

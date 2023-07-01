@@ -1,11 +1,15 @@
 #ifndef HiRA_hh
 #define HiRA_hh
 
+#include "AME.hh"
 #include "Particle.hh"
 #include "HiRA/HiRAStripMap.hh"
 #include "HiRA/GeometricEfficiency.hh"
 #include "HiRA/ReactionLost.hh"
 #include "HiRA/LaserAngles.hh"
+
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 class HiRA
 {
@@ -13,9 +17,11 @@ public:
     HiRA();
     ~HiRA();
 
+    void Initalize_Coverage(const std::string &path);
     void Initialize_LaserAngles(const std::string &path);
     void Initialize_StripMap(const std::string &path, const std::string &version);
     void Initialize_GeometricEfficiency(const std::string &path);
+    void Initialize_ReactionLost(const std::string &path);
 
     double GetTheta(const int &tel, const int &ef, const int &eb);
     double GetPhi(const int &tel, const int &ef, const int &eb);
@@ -32,24 +38,17 @@ private:
     ReactionLost *mReactionLostReader;
     LaserAngles *mLaserAnglesReader;
 
+
     std::map<std::string, std::array<double, 2>> mKinergyLabCut;
     std::map<std::string, std::array<double, 2>> mThetaLabCut;
 
 protected:
-    std::map<std::string, std::array<double, 2>> mDefaultKinergyLabCut = {
-        {"p", {20.0, 198.0}},
-        {"d", {15.0, 263. / 2}},
-        {"t", {12.0, 312. / 3}},
-        {"3He", {20.0, 200.0}},
-        {"4He", {18.0, 200.0}},
-    };
-
-    std::map<std::string, std::array<double, 2>> mDefaultThetaLabCut = {
-        {"p", {30., 75.}},
-        {"d", {30., 75.}},
-        {"t", {30., 75.}},
-        {"3He", {30., 75.}},
-        {"4He", {30., 75.}},
+    std::vector<std::string> ACCEPTED_PARTICLES = {
+        "p",
+        "d",
+        "t",
+        "3He",
+        "4He",
     };
 };
 
