@@ -1,6 +1,6 @@
 #include "ReactionLost.hh"
 
-E15190ReactionLost::E15190ReactionLost(const std::string &pth, const std::string &fcn_name)
+ReactionLost::ReactionLost(const std::string &pth, const std::string &fcn_name)
 {
     this->function_name = fcn_name;
 
@@ -15,7 +15,7 @@ E15190ReactionLost::E15190ReactionLost(const std::string &pth, const std::string
     // read parameters
     this->_inititalize(pth);
 }
-void E15190ReactionLost::_inititalize(const std::string &pth)
+void ReactionLost::_inititalize(const std::string &pth)
 {
     json reaction_loss_parameters;
     std::ifstream json_file(pth.c_str());
@@ -58,7 +58,7 @@ void E15190ReactionLost::_inititalize(const std::string &pth)
     json_file.close();
 }
 
-double E15190ReactionLost::Get_ReactionLost_CorEff(const int &z, const int &a, const double &Ekin_Lab)
+double ReactionLost::Get_ReactionLost_CorEff(const int &z, const int &a, const double &Ekin_Lab)
 {
     auto optional_symbol = AME::get_instance()->GetSymbol(z, a);
     if (!optional_symbol)
@@ -75,7 +75,7 @@ double E15190ReactionLost::Get_ReactionLost_CorEff(const int &z, const int &a, c
     return this->f1_ReactionLost_CorEff[ame_name]->Eval(Ekin_Lab);
 }
 
-void E15190ReactionLost::_define_acceptable_particles()
+void ReactionLost::_define_acceptable_particles()
 {
     for (auto &name : this->default_acceptable_particles)
     {
@@ -84,7 +84,7 @@ void E15190ReactionLost::_define_acceptable_particles()
         auto optional_symbol = AME::get_instance()->GetSymbol(name);
         if (!optional_symbol)
         {
-            std::cout << "E15190ReactionLost::E15190ReactionLost: " << name << " is not found in AME database." << std::endl;
+            std::cout << "ReactionLost::ReactionLost: " << name << " is not found in AME database." << std::endl;
             continue;
         }
 
@@ -93,12 +93,12 @@ void E15190ReactionLost::_define_acceptable_particles()
     return;
 }
 
-void E15190ReactionLost::set_heavy_particle_substitute(const std::string &name)
+void ReactionLost::set_heavy_particle_substitute(const std::string &name)
 {
     this->heavy_particle_substitute = AME::get_instance()->GetSymbol(name).value_or(default_heavy_particle_substitute);
 }
 
-bool E15190ReactionLost::_accepted(const std::string &name)
+bool ReactionLost::_accepted(const std::string &name)
 {
     auto iter = std::find(this->acceptable_particles.begin(), this->acceptable_particles.end(), name);
     return (iter != this->acceptable_particles.end());

@@ -18,11 +18,11 @@ using json = nlohmann::json;
 
 #include "AME.hh"
 
-class E15190ReactionLost
+class ReactionLost
 {
 public:
-    E15190ReactionLost(const std::string &pth, const std::string &fcn_name = "f1_ReactionLost_CorEff");
-    ~E15190ReactionLost() { ; }
+    ReactionLost(const std::string &pth, const std::string &fcn_name = "f1_ReactionLost_CorEff");
+    ~ReactionLost() { ; }
     double Get_ReactionLost_CorEff(const int &z, const int &a, const double &Ekin_Lab);
 
     void _inititalize(const std::string &pth);
