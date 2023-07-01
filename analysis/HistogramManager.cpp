@@ -29,25 +29,33 @@ void HistogramManager::Fill(const Particle &particle, const double &weight)
         return;
     }
     this->h2_pta_rapidity_lab[ame_name]->Fill(particle.rapidity_lab_normed, particle.pmag_trans / A, weight);
-    this->h2_theta_kinery_lab[ame_name]->Fill(particle.kinergy_lab / A, particle.theta_lab, weight);
+    this->h2_theta_kinery_lab[ame_name]->Fill(particle.kinergy_lab / A, particle.theta_lab * TMath::RadToDeg(), weight);
     return;
 }
 
 void HistogramManager::Write()
 {
-    for (auto &p : this->mParticles)
+    for (auto &[name, hist] : this->h2_pta_rapidity_lab)
     {
-        this->h2_pta_rapidity_lab[p]->Write();
-        this->h2_theta_kinery_lab[p]->Write();
+        hist->Write();
+    }
+
+    for (auto &[name, hist] : this->h2_theta_kinery_lab)
+    {
+        hist->Write();
     }
 }
 
 void HistogramManager::Normalize(const double &norm)
 {
-    for (auto &p : this->mParticles)
+    for (auto &[name, hist] : this->h2_pta_rapidity_lab)
     {
-        this->h2_pta_rapidity_lab[p]->Scale(1. / norm);
-        this->h2_theta_kinery_lab[p]->Scale(1. / norm);
+        hist->Scale(1. / norm);
+    }
+
+    for (auto &[name, hist] : this->h2_theta_kinery_lab)
+    {
+        hist->Scale(1. / norm);
     }
 }
 
