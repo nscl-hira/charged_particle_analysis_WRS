@@ -64,7 +64,7 @@ public:
 
     int *GetHiRA_A() { return &hira_A[0]; }
     int *GetHiRA_Z() { return &hira_Z[0]; }
-    double *GetHiRA_Pmag() { return &hira_pmag[0]; }
+    double *GetHiRA_Kinergy() { return &hira_kinergy[0]; }
 
     int *GetHiRA_NumTel() { return &hira_numtel[0]; }
     int *GetHiRA_NumStripF() { return &hira_numstripf[0]; }
@@ -100,7 +100,7 @@ protected:
     int hira_multi;
     std::array<int, MAX_MULTI> hira_A;
     std::array<int, MAX_MULTI> hira_Z;
-    std::array<double, MAX_MULTI> hira_pmag;
+    std::array<double, MAX_MULTI> hira_kinergy;
 
     std::array<int, MAX_MULTI> hira_numtel;
     std::array<int, MAX_MULTI> hira_numstripf;

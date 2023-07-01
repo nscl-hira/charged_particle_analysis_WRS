@@ -108,7 +108,7 @@ void Reader::Initialize_Chain(const int &iRun)
     chain->SetBranchAddress("HiRA.fmulti", &this->hira_multi);
     chain->SetBranchAddress("HiRA.fAId", &this->hira_A[0]);
     chain->SetBranchAddress("HiRA.fZId", &this->hira_Z[0]);
-    chain->SetBranchAddress("HiRA.fMomentum", &this->hira_pmag[0]);
+    chain->SetBranchAddress("HiRA.fKinEnergy", &this->hira_kinergy[0]);
 
     chain->SetBranchAddress("HiRA.fnumtel", &this->hira_numtel[0]);
     chain->SetBranchAddress("HiRA.fnumstripf", &this->hira_numstripf[0]);
