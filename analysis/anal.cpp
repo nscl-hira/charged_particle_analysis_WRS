@@ -1,39 +1,54 @@
 #include "anal.hh"
 #include "HistogramManager.hh"
 
-AME ame;
 std::map<int, double> Get_ImpactParameter_Map(const std::string &path_bimp);
-
 int main(int argc, char *argv[])
 {
-    ArgumentParser argparser(argc, argv);
+    auto ame = AME::get_instance();
+    ame->PrintTable();
 
+    ArgumentParser argparser(argc, argv);
     auto ReducedImpactParameter = Get_ImpactParameter_Map(argparser.path_bimp);
     Reader *reader = new Reader(
         argparser.reaction,
         argparser.dir_data.string(),
-        argparser.path_runinfo.string());
+        argparser.path_runinfo.string()
+        //
+    );
 
     HistogramManager *hist_raw = new HistogramManager("raw");
     HistogramManager *hist_geoeff = new HistogramManager("geoeff");
     HistogramManager *hist_alleff = new HistogramManager("alleff");
 
-    double beam_mass = ame.GetMass(reader->GetBeamZ(), reader->GetBeamA());
-    double target_mass = ame.GetMass(reader->GetTargetZ(), reader->GetTargetA());
+    double beam_mass = ame->GetMass(reader->GetBeamZ(), reader->GetBeamA()).value();
+    double target_mass = ame->GetMass(reader->GetTargetZ(), reader->GetTargetA()).value();
     double betacms = Physics::GetReactionBeta(beam_mass, target_mass, reader->GetBeamEnergy(), reader->GetBeamA());
     double rapidity_beam = Physics::GetBeamRapidity(beam_mass, target_mass, reader->GetBeamEnergy(), reader->GetBeamA());
 
     HiRA *HiRA_detector = new HiRA();
+    HiRA_detector->Initalize_Coverage(argparser.path_coverage);
+    HiRA_detector->Initialize_ReactionLost(argparser.path_reaction_lost);
     HiRA_detector->Initialize_LaserAngles(argparser.path_pixel_angles);
 
     int Runs = reader->GetRuns();
     std::cout << "Number of runs: " << Runs << std::endl;
 
-    double Normalization = 0;
-    int NumberOfPassedEvents = 0;
+    if (argparser.debug)
+    {
+        std::cout << "Debug mode." << std::endl;
+        std::exit(0);
+    }
 
+    double Normalization = 0;
+    int NumberOfAnalyzedEvents = 0;
+    int NumberOfPassedEvents = 0;
     for (int iRun = 0; iRun < Runs; iRun++)
     {
+        if (NumberOfAnalyzedEvents >= argparser.nevents)
+        {
+            break;
+        }
+
         int RunIndex = reader->mRunIndex[iRun];
         std::string badmap_version = reader->mBadMapVersion[iRun];
         std::string trigger = reader->mTriggerCondition[iRun];
@@ -53,6 +68,7 @@ int main(int argc, char *argv[])
         reader->Initialize_Chain(iRun);
         for (int ievt = 0; ievt < reader->GetEntries(iRun); ievt++)
         {
+            NumberOfAnalyzedEvents++;
             reader->GetEntry(ievt);
 
             double tdc_trigger_uball_ds = reader->GetTDC_Trig_Uball_DS();
@@ -91,10 +107,12 @@ int main(int argc, char *argv[])
                 {
                     continue;
                 }
-                if (hira_A[ip] < 0 || hira_Z[ip] < 0 || hira_A[ip] < hira_Z[ip])
+
+                if (!ame->IsPhysical(hira_Z[ip], hira_A[ip]))
                 {
                     continue;
                 }
+
                 double thetalab = HiRA_detector->GetTheta(hira_numtel[ip], hira_numstripf[ip], hira_numstripb[ip]) * TMath::DegToRad();
 
                 double phi = HiRA_detector->GetPhi(hira_numtel[ip], hira_numstripf[ip], hira_numstripb[ip]) * TMath::DegToRad();
@@ -109,8 +127,10 @@ int main(int argc, char *argv[])
                     px / hira_A[ip],
                     py / hira_A[ip],
                     pz / hira_A[ip],
-                    ame.GetMass(hira_Z[ip], hira_A[ip]),
-                    "lab");
+                    ame->GetMass(hira_Z[ip], hira_A[ip]).value(),
+                    "lab"
+                    //
+                );
 
                 particle.Initialize(betacms, rapidity_beam);
 
@@ -133,15 +153,19 @@ int main(int argc, char *argv[])
             }
         }
         reader->Clear_Chain(iRun);
+        if (NumberOfAnalyzedEvents >= argparser.nevents)
+        {
+            continue;
+        }
     }
 
     std::cout << "Number of passed events: " << NumberOfPassedEvents << std::endl;
     std::cout << "Normalization: " << Normalization << std::endl;
 
     Normalization *= 300.;
-    hist_raw->Normalize(1. / Normalization);
-    hist_geoeff->Normalize(1. / Normalization);
-    hist_alleff->Normalize(1. / Normalization);
+    hist_raw->Normalize(Normalization);
+    hist_geoeff->Normalize(Normalization);
+    hist_alleff->Normalize(Normalization);
 
     TFile *file = new TFile(argparser.output_file.c_str(), "RECREATE");
     hist_raw->Write();
