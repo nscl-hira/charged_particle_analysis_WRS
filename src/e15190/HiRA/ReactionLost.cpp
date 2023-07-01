@@ -1,58 +1,105 @@
 #include "ReactionLost.hh"
 
-ReactionLost::ReactionLost()
+E15190ReactionLost::E15190ReactionLost(const std::string &pth, const std::string &fcn_name)
 {
-    Init_Sean();
+    this->function_name = fcn_name;
+
+    // get acceptable ame name
+    this->_define_acceptable_particles();
+
+    // set default values
+    this->heavy_particle_substitute = this->default_heavy_particle_substitute;
+    this->efficiency_range = this->default_efficiency_range;
+    this->efficiency_function = this->default_efficiency_function;
+
+    // read parameters
+    this->_inititalize(pth);
 }
-
-void ReactionLost::Init_Sean()
+void E15190ReactionLost::_inititalize(const std::string &pth)
 {
-    ReactionLost_Cor_Z = {1, 1, 1, 2, 2};
-    ReactionLost_Cor_A = {1, 2, 3, 3, 4};
+    json reaction_loss_parameters;
+    std::ifstream json_file(pth.c_str());
+    json_file >> reaction_loss_parameters;
 
-    std::vector<double> A = {-1.772780E-4, -3.124610E-4, -2.480730E-4, -9.824110E-5, -8.952670E-5};
-    std::vector<double> B = {-1.120190E-5, -6.187160E-6, -4.943390E-6, -7.446480E-7, -5.984310E-7};
+    std::string eff_fcn = (efficiency_function == "") ? this->default_efficiency_function : efficiency_function;
 
-    ReactionLost_Cor_ParticleName = {"P", "D", "T", "3He", "4He"};
-    f1_ReactionLost_CorEff.resize(ReactionLost_Cor_ParticleName.size());
-
-    if (f1_ReactionLost_CorEff.size() > ReactionLost_Cor_ParticleNum)
+    // set up correction function for each acceptable particle
+    for (auto &[name, parameters] : reaction_loss_parameters.items())
     {
-        throw std::invalid_argument("exceeding maximum number of particle in ReactionLost calculation.");
-    }
+        std::string fcn_name = this->function_name + "_" + name;
 
-    for (unsigned int iPID = 0; iPID < f1_ReactionLost_CorEff.size(); iPID++)
-    {
-        f1_ReactionLost_CorEff[iPID] = new TF1(("f1_ReactionLost_CorEff_" + ReactionLost_Cor_ParticleName[iPID]).c_str(), "TMath::Exp([0]*x*x+[1]*x)", 0, 500);
-        f1_ReactionLost_CorEff[iPID]->SetParameter(0, B[iPID]);
-        f1_ReactionLost_CorEff[iPID]->SetParameter(1, A[iPID]);
-    }
-}
+        // get ame chemical symbol from alias
+        auto optional_symbol = AME::get_instance()->GetSymbol(name);
+        std::string ame_name = (optional_symbol) ? optional_symbol.value() : "not found";
 
-double ReactionLost::Get_ReactionLost_CorEff(const int &Z, const int &A, const double &Ekin_Total_Lab)
-{
-    int Index = -1;
-    double eff;
-    for (int iPID = 0; iPID < f1_ReactionLost_CorEff.size(); iPID++)
-    {
-        if (Z == ReactionLost_Cor_Z[iPID] && A == ReactionLost_Cor_A[iPID])
+        // pass if the ame name is not in the acceptable list
+        auto accepted = [this](const std::string &name)
         {
-            Index = iPID;
-            break;
-        }
-    }
-    if (Index != -1)
-    {
-        eff = f1_ReactionLost_CorEff[Index]->Eval(Ekin_Total_Lab);
-    }
-    else
-    {
-        eff = f1_ReactionLost_CorEff[ReactionLost_Cor_ParticleNum - 1]->Eval(Ekin_Total_Lab);
-    } // the others are set to same with the last particle( always is alpha ).
+            auto iter = std::find(this->acceptable_particles.begin(), this->acceptable_particles.end(), name);
+            return (iter != this->acceptable_particles.end());
+        };
 
-    if (eff > 0 && eff < 0.001)
-    {
-        eff = 0.001;
+        if (!accepted(ame_name))
+        {
+            continue;
+        }
+
+        this->f1_ReactionLost_CorEff[ame_name] = new TF1(
+            fcn_name.c_str(),
+            eff_fcn.c_str(),
+            this->efficiency_range[0],
+            this->efficiency_range[1]
+            //
+        );
+        this->f1_ReactionLost_CorEff[ame_name]->SetParameter(0, parameters["b"].get<double>());
+        this->f1_ReactionLost_CorEff[ame_name]->SetParameter(1, parameters["a"].get<double>());
     }
-    return eff;
+
+    json_file.close();
+}
+
+double E15190ReactionLost::Get_ReactionLost_CorEff(const int &z, const int &a, const double &Ekin_Lab)
+{
+    auto optional_symbol = AME::get_instance()->GetSymbol(z, a);
+    if (!optional_symbol)
+    {
+        return this->unphysical_effeciency;
+    }
+
+    std::string ame_name = optional_symbol.value();
+    if (!this->_accepted(ame_name))
+    {
+        // use substitute particle if not accepted and change to ame-name
+        ame_name = AME::get_instance()->GetSymbol(this->heavy_particle_substitute).value();
+    }
+    return this->f1_ReactionLost_CorEff[ame_name]->Eval(Ekin_Lab);
+}
+
+void E15190ReactionLost::_define_acceptable_particles()
+{
+    for (auto &name : this->default_acceptable_particles)
+    {
+        this->acceptable_particles.push_back(name);
+
+        auto optional_symbol = AME::get_instance()->GetSymbol(name);
+        if (!optional_symbol)
+        {
+            std::cout << "E15190ReactionLost::E15190ReactionLost: " << name << " is not found in AME database." << std::endl;
+            continue;
+        }
+
+        this->acceptable_particles.push_back(optional_symbol.value());
+    }
+    return;
+}
+
+void E15190ReactionLost::set_heavy_particle_substitute(const std::string &name)
+{
+    this->heavy_particle_substitute = AME::get_instance()->GetSymbol(name).value_or(default_heavy_particle_substitute);
+}
+
+bool E15190ReactionLost::_accepted(const std::string &name)
+{
+    auto iter = std::find(this->acceptable_particles.begin(), this->acceptable_particles.end(), name);
+    return (iter != this->acceptable_particles.end());
 }
