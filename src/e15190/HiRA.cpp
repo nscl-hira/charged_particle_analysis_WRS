@@ -24,8 +24,8 @@ void HiRA::Initialize_LaserAngles(const std::string &path)
 
     if (!fs::exists(path))
     {
-        std::string msg = path + " does not exist.";
-        throw std::invalid_argument(msg.c_str());
+        std::cerr << "HiRA::Initialize_LaserAngles: file not found: " << path << std::endl;
+        std::exit(1);
     }
     mLaserAnglesReader = new LaserAngles(path);
 }
@@ -38,14 +38,20 @@ void HiRA::Initialize_StripMap(const std::string &path, const std::string &versi
     }
     if (!fs::is_directory(path))
     {
-        std::string msg = path + " is not a directory.";
-        throw std::invalid_argument(msg.c_str());
+        std::cerr << "HiRA::Initialize_StripMap: directory not found: " << path << std::endl;
+        std::exit(1);
     }
     mHiRAStripMapReader = new HiRAStripMap(path, version);
 }
 
 void HiRA::Initalize_Coverage(const std::string &path)
 {
+    if (!fs::exists(path))
+    {
+        std::cerr << "HiRA::Initalize_Coverage: file not found: " << path << std::endl;
+        std::exit(1);
+    }
+
     json hira_kinematic_cut;
     std::ifstream json_file(path.c_str());
     json_file >> hira_kinematic_cut;
@@ -55,20 +61,20 @@ void HiRA::Initalize_Coverage(const std::string &path)
         return std::find(this->ACCEPTED_PARTICLES.begin(), this->ACCEPTED_PARTICLES.end(), key) != this->ACCEPTED_PARTICLES.end();
     };
 
-    for (auto &[name, array] : hira_kinematic_cut["thetalab"].items())
-    {
-        if (!is_inside(name))
-            continue;
-        std::string ame_name = AME::get_instance()->GetSymbol(name).value();
-        mThetaLabCut[ame_name] = array;
-    }
-
     for (auto &[name, array] : hira_kinematic_cut["kinergy_per_nucleon"].items())
     {
         if (!is_inside(name))
             continue;
         std::string ame_name = AME::get_instance()->GetSymbol(name).value();
-        mThetaLabCut[ame_name] = array;
+        mKinergyLabCut[ame_name] = array.get<std::array<double, 2>>();
+    }
+
+    for (auto &[name, array] : hira_kinematic_cut["thetalab"].items())
+    {
+        if (!is_inside(name))
+            continue;
+        std::string ame_name = AME::get_instance()->GetSymbol(name).value();
+        mThetaLabCut[ame_name] = array.get<std::array<double, 2>>();
     }
 
     json_file.close();

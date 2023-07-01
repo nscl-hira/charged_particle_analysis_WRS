@@ -17,6 +17,12 @@ ReactionLost::ReactionLost(const std::string &pth, const std::string &fcn_name)
 }
 void ReactionLost::_inititalize(const std::string &pth)
 {
+    if (!fs::exists(pth))
+    {
+        std::cerr << "ReactionLost::_inititalize: file not found: " << pth << std::endl;
+        std::exit(1);
+    }
+
     json reaction_loss_parameters;
     std::ifstream json_file(pth.c_str());
     json_file >> reaction_loss_parameters;
