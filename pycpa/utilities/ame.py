@@ -1,89 +1,93 @@
-from pycpa import PROJECT_DIR
-
-import pandas as pd
+import re
 import pathlib
 import requests
-import re
-import fortranformat as ff
+import pandas as pd
 from astropy import units, constants
-
-path_download = pathlib.Path(PROJECT_DIR, 'database/ame')
-
+from pycpa import PROJECT_DIR
 
 class AME:
+    DEFAULT_PATH = PROJECT_DIR / 'database' / 'ame' / 'mass20.txt'
     def __init__(self, url=None, dl_path=None):
         if url is None:
             url = 'https://www-nds.iaea.org/amdc/ame2020/mass_1.mas20.txt'
-        r = requests.get(url)
 
-        if dl_path is None:
-            path_download.mkdir(exist_ok=True, parents=True)
-            dl_path = pathlib.Path(path_download, 'mass20.txt')
-        self.dl_path = dl_path
+        r = requests.get(url)
+        dl_path = self.DEFAULT_PATH if dl_path is None else pathlib.Path(dl_path)
+        dl_path.parent.mkdir(exist_ok=True, parents=True)
 
         with open(str(dl_path), 'w') as file:
             file.write(r.text)
+        
+        self.dl_path = dl_path
+        self._parse_mass_table()
 
-        self._read()
-
-    def _read(self):
+    def _parse_mass_table(self):
         with open(str(self.dl_path), 'r') as file:
-            lines = file.readlines()
+            content = file.readlines()
 
-        for line in lines:
+        # record fortran format
+        for line in content:
             if 'format' in line:
-                format = line.split(':')[1].strip()
+                fortran_format = line.split(':')[1].strip().split(',')
                 break
-        for i, line in enumerate(lines):
-            if 'keV' in line:
+
+        # remove headers
+        for i, line in enumerate(content):
+            if line.count('keV') == 3 and line.count('micro-u') == 1:
                 break
-        lines = lines[i+1:]
-        format = '(' + format + ')'
-
-        freader = ff.FortranRecordReader(format)
-
-        columns_names = [
-            '1',
-            'N-Z',
-            'N',
-            'Z',
-            'A',
-            'EL',
-            'O',
-            'mass_excess',
-            'mass_excess_err',
-            'binding_energy_per_nucleon',
-            'binding_energy_per_nucleon_err',
-            'B-',
-            'beta_decay_energy',
-            'beta_decay_energy_err',
-            'au',
-            'atomic_mass_au',
-            'atomic_mass_err',
-        ]
+        
+        content = content[i+1:]
 
         # '#' means estimated value (non-experimental)
         # '*' means unable to calculate
+        content = [re.sub('[*#]', ' ', line) for line in content]
 
-        # fortranformat does not handle '*'
-        lines = [re.sub('[*]', ' ', line) for line in lines]
+        columns_names = {
+            '1' : str,
+            'N-Z' : int,
+            'N' : int,
+            'Z' : int,
+            'A' : int,
+            'EL' : str, 
+            'O' : str,
+            'mass_excess' : float,
+            'mass_excess_err' : float,
+            'binding_energy_per_nucleon' : float,
+            'binding_energy_per_nucleon_err' : float,
+            'B-' : str,
+            'beta_decay_energy' : float,
+            'beta_decay_energy_err' : float,
+            'au' : int,
+            'atomic_mass_au' : float,
+            'atomic_mass_err' : float,
+        }
 
-        # avoid unit change in fortranformat
-        lines = [re.sub('[#]', '.', line) for line in lines]
+        spacing = [int(re.findall(r'\d+', format_string)[0]) for format_string in fortran_format]
+        
+        parsed_content = []
+        for line in content:
+            start = 0
+            parsed_line = []
+            for space in spacing:
+                parsed_line.append(line[start : start + space])
+                start += space
+            parsed_content.append(parsed_line)
 
-        lines = [freader.read(line) for line in lines]
+        df = pd.DataFrame(parsed_content)
+        df = df.loc[:, ~df.apply(lambda x: x.str.isspace()).all()]
+        df.columns = list(columns_names.keys())
 
-        df = pd.DataFrame(lines, columns=columns_names)
+        for column, dtype in columns_names.items():
+            df[column] = df[column].str.strip()
+            try: 
+                df[column] = df[column].astype(dtype)
+            except ValueError:
+                df[column] = pd.to_numeric(df[column], errors='coerce')
 
+        # parse by physics
         df['symbol'] = list(map(lambda s: s.lower().strip(), df['EL']))
         df['symbol'] = df['symbol'] + df['A'].astype(str)
-
-        df['N'] = df['N'].astype(int)
-        df['Z'] = df['Z'].astype(int)
-        df['A'] = df['A'].astype(int)
-
-        # change of units
-
+        
         df['mass_excess'] = df['mass_excess'] * units.keV.to('MeV', 1.)
         df['mass_excess_err'] = df['mass_excess_err'] * units.keV.to('MeV', 1.)
 
@@ -98,9 +102,7 @@ class AME:
         df['binding_energy_per_nucleon_err'] = df['binding_energy_per_nucleon_err'] * \
             units.keV.to('MeV', 1.)
 
-        df.drop(columns=['1', 'N-Z', 'O', 'B-', 'EL',
-                'atomic_mass_au', 'atomic_mass_err'], inplace=True)
-
+        df.drop(columns=['1', 'N-Z', 'O', 'B-', 'EL', 'atomic_mass_au', 'atomic_mass_err'], inplace=True)
         self.df = df
 
     def _get_row(self, symbol=None, N=None, Z=None):
@@ -131,7 +133,11 @@ class AME:
     def get_binding_energy(self, symbol=None, N=None, Z=None, unit='MeV'):
         return self._get_row(symbol, N, Z)['binding_energy_per_nucleon'].values[0] * units.MeV.to(unit)
 
-    def get_mass_data(self, fname='ame_mass.txt', usecols=['symbol', 'Z', 'A', 'mass', 'binding_energy_per_nucleon']):
+    def get_reduced_dataframe(
+            self, 
+            fname='ame_mass.txt', 
+            usecols=['symbol', 'Z', 'A', 'mass', 'binding_energy_per_nucleon']
+        ) -> pd.DataFrame:
         """ Output the mass table to a format convenient for reading in C++.
         Parameters
         ----------
@@ -147,4 +153,4 @@ class AME:
         df = self.df[usecols].copy()
         df.to_csv(fname, sep=' ', columns=usecols, index=False)
 
-        return
+        return df
