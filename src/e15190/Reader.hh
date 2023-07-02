@@ -34,16 +34,17 @@ public:
     void Initialize_Chain(const int &iRun);
     void Clear_Chain(const int &iRun);
 
-    std::string GetBeamNuclei() { return mBeamNuclei; }
-    std::string GetTargetNuclei() { return mTargetNuclei; }
-    int GetBeamZ() { return mBeamZ; }
-    int GetBeamA() { return mBeamA; }
-    int GetTargetZ() { return mTargetZ; }
-    int GetTargetA() { return mTargetA; }
-    double GetBeamEnergy() { return mBeamEnergy; }
+    std::string GetBeamNuclei() const { return mBeamNuclei; }
+    std::string GetTargetNuclei() const { return mTargetNuclei; }
+    int GetBeamZ() const { return mBeamZ; }
+    int GetBeamA() const { return mBeamA; }
+    int GetTargetZ() const { return mTargetZ; }
+    int GetTargetA() const { return mTargetA; }
+    double GetBeamEnergy() const { return mBeamEnergy; }
 
+    long GetEntries();
     long GetEntries(const int &iRun) { return mChains[iRun]->GetEntries(); }
-    int GetRuns() { return mChains.size(); }
+    int GetRuns() const { return mChains.size(); }
 
     int GetEntry(const int &ievt);
 

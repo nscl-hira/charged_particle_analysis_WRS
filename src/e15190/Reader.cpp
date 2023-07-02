@@ -127,3 +127,13 @@ int Reader::GetEntry(const int &ievt)
 {
     return mChains[mCurrentRun]->GetEntry(ievt);
 }
+
+long Reader::GetEntries()
+{
+    long entries = 0;
+    for (auto &[iRun, chain] : mChains)
+    {
+        entries += chain->GetEntries();
+    }
+    return entries;
+}
