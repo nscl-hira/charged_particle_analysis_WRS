@@ -1,0 +1,190 @@
+#!/usr/bin/env python3
+import os
+import re
+import grp
+import argparse
+import pathlib
+import subprocess
+import warnings
+import shutil
+import pandas as pd
+from typing import Literal
+
+"""
+This program helps manage the root files of HiRA10 detector in e15190 experiment. It can be used for
+1. list the run-info : run-id, reaction, trigger, etc for different runs. Use the command `manage_file --list -r <reaction>`
+2. check if the root files are present in the database directory (set-up by Zbigniew). Use the command `manage_file --check -r <reaction> -src-pth <path-to-database>`. This prints the missing files and the files that can be used as replacement.
+"""
+
+class RunInfo:
+    COLUMNS = {
+        'reaction' : str,
+        'start-id' : int, 
+        'end-id' : int,
+        'badmap' : str,
+        'shadowbar' : int,
+        'trigger' : str,
+    }
+    def __init__(self, path : str = None):
+
+        pth = pathlib.Path(__file__).parent.parent / 'database' / 'e15190' / 'RunInfo.dat' if path is None else path
+
+        with open(str(pth), 'r') as f:
+            # read non-empty lines that do not start with '#'
+            content = [line.split() for line in f.readlines() if line.strip() and not line.startswith('#')]
+            df = pd.DataFrame(content, columns=list(self.COLUMNS.keys())).astype(self.COLUMNS)
+            df['nruns'] = df['end-id'] - df['start-id'] + 1
+            df = df[df['trigger'].str.contains('Hira')]
+
+        self.df = df
+        self.reactions = df['reaction'].unique()
+
+    def get_number_of_runs(self, reaction : str) -> int:
+        return self.df[self.df['reaction'] == reaction]['nruns'].sum()
+    
+    def get_list_of_run_id(self, reaction : str) -> list[str | pathlib.Path]:
+        file_list = []
+        for _, row in self.df[self.df['reaction'] == reaction].iterrows():
+            file_list.extend([id for id in range(row['start-id'], row['end-id'] + 1)])
+        
+        return file_list
+    
+    def get_reaction_paths(self, reaction : str, path : str) -> dict[int, pathlib.Path]:
+        data_dir = pathlib.Path(path)
+        folder = parse_reaction(reaction)
+        filename = 'CalibratedData_{id:04d}.root'
+        return {
+            id : data_dir / folder / filename.format(id=id) for id in self.get_list_of_run_id(reaction)
+        }
+
+    def get_missing_files(self, reaction : str, path : str) -> dict[int, pathlib.Path]:
+        runfiles = self.get_reaction_paths(reaction, path)
+        return {id : pth for id, pth in runfiles.items() if not pth.exists()}
+        
+def main():
+    args = get_args()
+    runinfo = RunInfo(args.run_info)
+    
+    # print the entire run-info or only for a specific reaction
+    if args.list:
+        if args.reaction is None:
+            print(runinfo.df)
+        else:
+            print(runinfo.df[runinfo.df['reaction'] == args.reaction])
+        return
+    
+    existing_pths = get_existing_files(args.src_pth) 
+    reaction_list = runinfo.reactions if args.reaction is None else [args.reaction]
+
+    for reaction in reaction_list:
+        missing_pths = runinfo.get_missing_files(reaction, args.src_pth)
+        # find missing files in exsiting database
+        replacement_pths = {id : pth for id, pth in existing_pths.items() if id in missing_pths.keys()}
+
+        if args.check:
+            # check if missing files are misplaced
+            for id, _ in missing_pths.items():
+                if id in replacement_pths.keys():
+                    print(f'{reaction} : missing {id} : can be replaced from {str(replacement_pths[id])}')
+                else:
+                    print(f'{reaction} : missing {id} : no replacement found')
+
+        # get_disk_space(args.src_pth)
+        if args.update:
+            check_permission(args.src_pth)
+            for id, pth in missing_pths.items():
+                if id in replacement_pths.keys():
+                    pth.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy(replacement_pths[id], pth)
+                    print(f'{reaction} : missing {id} : copied from {str(replacement_pths[id])}')
+                else:
+                    print(f'{reaction} : missing {id} : no replacement found')
+
+def get_args():
+    argparser = argparse.ArgumentParser(description='This program helps manage the root files of HiRA10 detector in e15190 experiment.')
+    argparser.add_argument('--src-pth', type=str, help='directory to database, used if `check` or `update` is set.')
+    argparser.add_argument('--run-info', type=str, help='path to `RunInfo.dat`. User should provide the path if the location to this file has been changed. Default: $PROJECT_DIR/database/e15190/RunInfo.dat.')
+    argparser.add_argument('--reaction', '-r', type=str, help='reaction to be checked. Default : None (all reactions)')
+    argparser.add_argument('--list', '-l', action='store_true', help='list all files in the runinfo. Default: True')
+    argparser.add_argument('--check', '-c', action='store_true', help='check if all files are present in the database. Default: False')
+    argparser.add_argument('--update', '-u', action='store_true', help='update the database. Default: False')
+    args = argparser.parse_args()
+
+    if sum([args.list, args.check, args.update]) != 1:
+        args.list = True
+    
+    # src-pth is required if `check` or `update` is set
+    if sum([args.check, args.update]) == 1:
+        if not pathlib.Path(args.src_pth).is_dir() or not pathlib.Path(args.src_pth).exists():
+            raise ValueError(f'Path {args.src_pth} does not exist or is not a directory')
+    return args
+
+def parse_reaction(reaction : str) -> str:
+    beam, target, _ = re.findall('[a-zA-Z]+', reaction)
+    beamA, targetA, beamE = re.findall('\d+', reaction)    
+    return f'{beamA}{beam.capitalize()}{targetA}{target.capitalize()}_{beamE}MeVu'
+
+def get_existing_files(path : str, file_extension : str ='.root') -> dict():
+    return {int(pth.stem[-4:]) : pth for pth in pathlib.Path(path).rglob(f'*{file_extension}')}
+
+def get_disk_space(
+    path : str,
+    use_shutil=True,
+    scope : Literal['total', 'used', 'free']='free',
+) -> float:
+    
+    # 1kb = 1024 bytes in shutil.disk_usage
+    if use_shutil:
+        return float(shutil.disk_usage(path).scope)
+    
+    # 1kb = 1000 bytes by convention
+    out = subprocess.run(
+        f'df -h {str(path)} | tail -1',
+        shell=True,
+        capture_output=True,
+        text=True
+    )
+    avail = out.stdout.split()[3]
+    units = {
+        'K' : 1e3,
+        'M' : 1e6,
+        'G' : 1e9,
+        'T' : 1e12
+    }
+    return float(avail[:-1]) * units[avail[-1].upper()]
+
+def check_permission(
+    path : str,
+    permission : Literal['read', 'write']='write',
+    level : Literal['ignore', 'warn', 'raise']='raise'
+):
+    mode = {
+        'read' : os.R_OK,
+        'write' : os.W_OK
+    }
+    write_permission = os.access(str(path), mode[permission])
+    owner = pathlib.Path(path).owner()
+
+    username = os.getlogin()
+    user_uid = os.getuid()
+
+    group_list = os.getgrouplist(username, user_uid)
+    group_list = [grp.getgrgid(gid).gr_name for gid in group_list]
+    is_sudo = 'is in' if 'sudo' in group_list else 'is not in'
+
+    message = f'''
+        No {permission} permission for {path}:
+        Owner : {owner}
+        User : {username} 
+        ** {username} {is_sudo} sudo group. Consider using `sudo chmod -R [permission] [path]` to change the permission.
+    '''
+    if not write_permission:
+        if level == 'raise':
+            raise PermissionError(message)
+        elif level == 'warn':
+            warnings.warn(message)
+        elif level == 'ignore':
+            return
+    return
+if __name__ == '__main__':
+    main()
