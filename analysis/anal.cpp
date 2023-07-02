@@ -5,9 +5,14 @@ std::map<int, double> Get_ImpactParameter_Map(const std::string &path_bimp);
 int main(int argc, char *argv[])
 {
     auto ame = AME::get_instance();
-    ame->PrintTable();
 
     ArgumentParser argparser(argc, argv);
+    if (argparser.debug)
+    {
+        std::cout << "Debug mode begin." << std::endl;
+        argparser.report();
+    }
+
     auto ReducedImpactParameter = Get_ImpactParameter_Map(argparser.path_bimp);
     Reader *reader = new Reader(
         argparser.reaction,
@@ -31,24 +36,23 @@ int main(int argc, char *argv[])
     HiRA_detector->Initialize_LaserAngles(argparser.path_pixel_angles);
 
     int Runs = reader->GetRuns();
-    std::cout << "Number of runs: " << Runs << std::endl;
 
     if (argparser.debug)
     {
-        std::cout << "Debug mode." << std::endl;
+        ame->PrintTable();
+
+        std::cout << "Debug mode ended." << std::endl;
         std::exit(0);
     }
 
     double Normalization = 0;
     int NumberOfAnalyzedEvents = 0;
     int NumberOfPassedEvents = 0;
+
+    long nevents = argparser.nevents == 0 ? reader->GetEntries() : std::min(argparser.nevents, reader->GetEntries());
+    std::cout << "Number of events to be analyzed: " << nevents << std::endl;
     for (int iRun = 0; iRun < Runs; iRun++)
     {
-        if (NumberOfAnalyzedEvents >= argparser.nevents)
-        {
-            break;
-        }
-
         int RunIndex = reader->mRunIndex[iRun];
         std::string badmap_version = reader->mBadMapVersion[iRun];
         std::string trigger = reader->mTriggerCondition[iRun];
@@ -68,6 +72,11 @@ int main(int argc, char *argv[])
         reader->Initialize_Chain(iRun);
         for (int ievt = 0; ievt < reader->GetEntries(iRun); ievt++)
         {
+            if (NumberOfAnalyzedEvents >= nevents)
+            {
+                continue;
+            }
+
             NumberOfAnalyzedEvents++;
             reader->GetEntry(ievt);
 
@@ -80,8 +89,8 @@ int main(int argc, char *argv[])
 
             int *hira_A = reader->GetHiRA_A();
             int *hira_Z = reader->GetHiRA_Z();
+            double *hira_kinergy = reader->GetHiRA_Kinergy();
 
-            double *hira_pmag = reader->GetHiRA_Pmag();
             int *hira_numcsi = reader->GetHiRA_NumCSI();
             int *hira_numtel = reader->GetHiRA_NumTel();
             int *hira_numstripf = reader->GetHiRA_NumStripF();
@@ -113,13 +122,17 @@ int main(int argc, char *argv[])
                     continue;
                 }
 
+                double mass = ame->GetMass(hira_Z[ip], hira_A[ip]).value();
+
                 double thetalab = HiRA_detector->GetTheta(hira_numtel[ip], hira_numstripf[ip], hira_numstripb[ip]) * TMath::DegToRad();
 
                 double phi = HiRA_detector->GetPhi(hira_numtel[ip], hira_numstripf[ip], hira_numstripb[ip]) * TMath::DegToRad();
 
-                double px = hira_pmag[ip] * TMath::Sin(thetalab) * TMath::Cos(phi);
-                double py = hira_pmag[ip] * TMath::Sin(thetalab) * TMath::Sin(phi);
-                double pz = hira_pmag[ip] * TMath::Cos(thetalab);
+                double pmag = TMath::Sqrt(pow(hira_kinergy[ip] + mass, 2.) - pow(mass, 2.));
+
+                double px = pmag * TMath::Sin(thetalab) * TMath::Cos(phi);
+                double py = pmag * TMath::Sin(thetalab) * TMath::Sin(phi);
+                double pz = pmag * TMath::Cos(thetalab);
 
                 Particle particle(
                     hira_A[ip] - hira_Z[ip],
@@ -127,7 +140,7 @@ int main(int argc, char *argv[])
                     px / hira_A[ip],
                     py / hira_A[ip],
                     pz / hira_A[ip],
-                    ame->GetMass(hira_Z[ip], hira_A[ip]).value(),
+                    mass,
                     "lab"
                     //
                 );
@@ -153,14 +166,15 @@ int main(int argc, char *argv[])
             }
         }
         reader->Clear_Chain(iRun);
-        if (NumberOfAnalyzedEvents >= argparser.nevents)
+        if (NumberOfAnalyzedEvents >= nevents)
         {
-            continue;
+            break;
         }
     }
 
     std::cout << "Number of passed events: " << NumberOfPassedEvents << std::endl;
     std::cout << "Normalization: " << Normalization << std::endl;
+    std::cout << "Number of analyzed events: " << NumberOfAnalyzedEvents << std::endl;
 
     Normalization *= 300.;
     hist_raw->Normalize(Normalization);

@@ -52,7 +52,7 @@ public:
 
         int option_index = 0;
         int opt;
-        while ((opt = getopt_long(argc, argv, "hr:o:c:b:", options.data(), &option_index)) != -1)
+        while ((opt = getopt_long(argc, argv, "hn:r:o:c:b:", options.data(), &option_index)) != -1)
         {
             switch (opt)
             {
@@ -144,8 +144,6 @@ public:
 
         // handle paths
         this->path_bimp = this->path_bimp / (this->reaction + ".dat");
-
-        this->report();
     }
 
     void help()
