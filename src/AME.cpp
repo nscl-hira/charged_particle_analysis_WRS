@@ -172,6 +172,8 @@ bool AME::IsPhysical(const std::string &symbol) const
 
 void AME::PrintTable(const int &head) const
 {
+    std::cout << std::setw(30) << "Atomic Mass Evaluation 2020\n";
+    std::cout << std::setw(30) << "---------------------------------------------------------\n";
     std::vector<std::string> header = {
         "symbol",
         "Z",
