@@ -1,13 +1,12 @@
 import pathlib
 import re
+import pandas as pd
 import numpy as np
 from astropy import units
 from collections import defaultdict
 from typing import Literal
 
-from pycpa import PROJECT_DIR
 from pycpa.utilities import ame
-ame_table = ame.AME()
 
 class Particle:
     ALIAS = {
@@ -30,50 +29,30 @@ class Particle:
         if name in self.ALIAS:
             name = self.ALIAS[name]
         self.name = name
-        self.mass = ame_table.get_mass(name)
-        self.N, self.Z = ame_table.get_NZ(symbol=self.name)
+        self.mass = ame.get_mass(name)
+        self.N, self.Z = ame.get_NZ(symbol=self.name)
     
 class RunLog:
-    CONFIG = pathlib.Path(PROJECT_DIR, 'database/e15190/RunInfo.data')
-    def __init__(self, path_config=None):
-        if path_config is None:
-            path_config = self.CONFIG
-        
-        self.path_config = path_config
+    COLUMNS = {
+        'reaction' : str,
+        'start-id' : int, 
+        'end-id' : int,
+        'badmap' : str,
+        'shadowbar' : int,
+        'trigger' : str,
+    }
+    def __init__(self, path : str = None):
+        pth = pathlib.Path(__file__).parent.parent / 'database' / 'e15190' / 'RunInfo.dat' if path is None else path
 
-        self.RunIndices = dict()
-        self.TriggerConditions = defaultdict(dict)
-        self.BadMapVersion = defaultdict(dict)
-        self.ShadowBar = defaultdict(dict)
-        self._read()
-        
+        with open(str(pth), 'r') as f:
+            # read non-empty lines that do not start with '#'
+            content = [line.split() for line in f.readlines() if line.strip() and not line.startswith('#')]
+            df = pd.DataFrame(content, columns=list(self.COLUMNS.keys())).astype(self.COLUMNS)
+            df['nruns'] = df['end-id'] - df['start-id'] + 1
+        self.df = df
 
-    def _read(self):
-        if not self.path_config.exists():
-            raise OSError(f'{str(self.path_config)} does not exist.')
-
-        with open(str(self.path_config), 'r') as f:
-            content = f.readlines()
-            for batch in content:
-                if batch.startswith('#') or batch.isspace():
-                    continue
-
-                info = batch.split()
-                reaction = info[0]
-                startID, endID = int(info[1]), int(info[2])
-                badmap = info[3]
-                shadowbar = int(info[4])
-                trigger = info[5]
-
-                if not reaction in self.RunIndices:
-                    self.RunIndices[reaction] = []
-                
-                for id in range(startID, endID+1):
-                    self.RunIndices[reaction].append(id)
-                    self.TriggerConditions[reaction][id] = trigger
-                    self.BadMapVersion[reaction][id] = badmap
-                    self.ShadowBar[reaction][id] = shadowbar
-
+    def get_number_of_runs(self, reaction : str) -> int:
+        return self.df[self.df['reaction'] == reaction]['nruns'].sum()
 
 class CollisionReaction:
     @staticmethod
@@ -99,8 +78,8 @@ class CollisionReaction:
     @staticmethod
     def get_betacms(reaction):
         d = CollisionReaction.dissemble_reaction(reaction)
-        beam_mass = ame_table.get_mass(d['beam'] + str(d['beamA'])) 
-        target_mass = ame_table.get_mass(d['target'] + str(d['targetA'])) 
+        beam_mass = ame.get_mass(d['beam'] + str(d['beamA'])) 
+        target_mass = ame.get_mass(d['target'] + str(d['targetA'])) 
         beam_ke = d['beam_energy'] * d['beamA'] * units.MeV
 
         beam_energy_tot = beam_ke + beam_mass
@@ -111,7 +90,7 @@ class CollisionReaction:
     @staticmethod
     def get_rapidity_beam(reaction):
         d = CollisionReaction.dissemble_reaction(reaction)
-        beam_mass = ame_table.get_mass(d['beam'] + str(d['beamA'])) 
+        beam_mass = ame.get_mass(d['beam'] + str(d['beamA'])) 
         beam_ke = d['beam_energy'] * d['beamA'] * units.MeV
 
         mom_beam = np.sqrt(beam_ke ** 2 + 2 * beam_ke * beam_mass)
@@ -120,12 +99,12 @@ class CollisionReaction:
     @staticmethod
     def get_rapidity_beam_and_target(reaction):
         d = CollisionReaction.dissemble_reaction(reaction)
-        beam_mass = ame_table.get_mass(d['beam'] + str(d['beamA'])) 
+        beam_mass = ame.get_mass(d['beam'] + str(d['beamA'])) 
         beam_ke = d['beam_energy'] * d['beamA'] * units.MeV
 
         mom_beam = np.sqrt(beam_ke ** 2 + 2 * beam_ke * beam_mass)
 
-        target_mass = ame_table.get_mass(d['target'] + str(d['targetA']))
+        target_mass = ame.get_mass(d['target'] + str(d['targetA']))
         
         return (0.5 * np.log((beam_ke + beam_mass + target_mass + mom_beam) / (beam_ke + beam_mass + target_mass - mom_beam))).value
 

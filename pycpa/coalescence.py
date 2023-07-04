@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from typing import Literal
 
-from pyamd.utilities import histo
+from pycpa.utilities import histo
 
 #alias
 dfhist = histo.histogram_handler

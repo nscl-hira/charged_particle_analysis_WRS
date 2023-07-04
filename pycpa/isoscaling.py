@@ -1,13 +1,9 @@
-import pandas as pd
+import iminuit
 import numpy as np
 from typing import Literal
-import iminuit
-
-from pyamd.e15190 import e15190
-from pyamd.utilities import minuit
 
 class Isoscaling:
-    """ A class for handling the fitting of the isoscaling relation :math: `R_{21} = C exp(N\\alpha + Z\\beta)`. After setting up the data, i.e. R21 ratio for different particles, the fit is performed by assuming a fixed normalization `C` for all data points. Then, the best normalization is found by iterating over a range of `C` and fitting the data. Finally, the global fit is performed using the best normalization. The result is stored in the attributes `chi2`, `param_names`, `param_values`, `param_errors`. The predicted R21 ratio for a particle with proton Z and neutron N can be calculated by calling `predict` method. This class relies on `iminuit` package for the fitting but also include the equivalent implementation using ROOT.TMinut. The ROOT version is not recommended as it is much slower than the iminuit version.
+    """ A class for handling the fitting of the isoscaling relation :math: `R_{21} = C exp(N\\alpha + Z\\beta)`. After setting up the data, i.e. R21 ratio for different particles, the fit is performed by assuming a fixed normalization `C` for all data points. Then, the best normalization is found by iterating over a range of `C` and fitting the data. Finally, the global fit is performed using the best normalization. The result is stored in the attributes `chi2`, `param_names`, `param_values`, `param_errors`. The predicted R21 ratio for a particle with proton Z and neutron N can be calculated by calling `predict` method. This class relies on `iminuit` package for the fitting.
     """
     def __init__(self):
         self.r21 = dict()
@@ -133,94 +129,3 @@ class Isoscaling:
         yerr = Isoscaling.model_error(*X, self.param_values['norm'], self.param_values['alpha'], self.param_values['beta'], self.param_errors['norm'], self.param_errors['alpha'], self.param_errors['beta'])
         return y, yerr
     
-    def fit_TMinuit(self, particles=None, range=(100, 400), drop_neutron=True, fixed_norm=False, norm=0.7, verbose=0):
-        """ Fit Isoscaling using TMinuit
-        """
-        global fcn
-        global subdf
-
-        if particles is None:
-            particles = ['p', 'd', 't', '3He', '4He']
-        self.range_in_fit = range
-        self.particles_in_fit = particles
-
-        data = dict()
-        for particle in particles:
-            data[particle] = self.r21[particle].copy()
-            data[particle].query(
-                f'x >= {range[0]} & x <= {range[1]}', inplace=True)
-            data[particle][['N', 'Z']] = e15190.Particle(
-                particle).N, e15190.Particle(particle).Z
-
-        if drop_neutron and 'n' in data:
-            data.pop('n')
-
-        data = pd.concat(list(data.values()), ignore_index=True)
-
-        def fcn(npar, gin, f, par, iflag):
-            chisq = 0.
-            delta = (
-                subdf.y - Isoscaling.model(subdf['Z'], subdf['N'], par[0], par[1], par[2])) / subdf['y_err']
-            chisq += np.sum(delta**2)
-            f.value = chisq
-
-        self.norm = []
-        self.alpha = []
-        self.beta = []
-        self.norm_err = []
-        self.alpha_err = []
-        self.beta_err = []
-
-        self.chisq = 0.
-        for val, subdf_ in data.groupby('x'):
-            subdf = subdf_
-            gMinuit = minuit.TMinuit(3, fcn)
-            gMinuit.set_parameter(0, 'norm', norm, 0.01, fixed=fixed_norm)
-            gMinuit.set_parameter(1, 'alpha', 0.5, 0.01)
-            gMinuit.set_parameter(2, 'beta', 0.5, 0.01)
-            gMinuit.fit(verbose=verbose)
-
-            self.norm.append(gMinuit.get_parameter('norm'))
-            self.alpha.append(gMinuit.get_parameter('alpha'))
-            self.beta.append(gMinuit.get_parameter('beta'))
-            self.norm_err.append(gMinuit.get_error('norm'))
-            self.alpha_err.append(gMinuit.get_error('alpha'))
-            self.beta_err.append(gMinuit.get_error('beta'))
-            self.chisq += gMinuit.get_chisq()
-
-        self.norm = np.array(self.norm)
-        self.alpha = np.array(self.alpha)
-        self.beta = np.array(self.beta)
-        self.norm_err = np.array(self.norm_err)
-        self.alpha_err = np.array(self.alpha_err)
-        self.beta_err = np.array(self.beta_err)
-        return self
-
-    def best_normalization(self, particles=None, range=(100, 400), drop_neutron=True, norm_range=(0.7, 1.2), norm_step=0.01):
-
-        chisq_ = 1e5
-        norm_ = norm_range[0]
-        for x in np.arange(*norm_range, norm_step):
-            self.fit_TMinuit(particles=particles,
-                     range=range, drop_neutron=drop_neutron, fixed_norm=True, norm=x)
-            if self.chisq < chisq_:
-                norm_ = x
-                chisq_ = self.chisq
-        return norm_
-
-    def predict_TMinuit(self, particle):
-        df = self.r21[particle].copy()
-        df.query(
-            f'x >= {self.range_in_fit[0]} & x <= {self.range_in_fit[1]}', inplace=True)
-
-        y = Isoscaling.model(e15190.Particle(particle).Z, e15190.Particle(
-            particle).N, self.norm, self.alpha, self.beta)
-        yerr = Isoscaling.model_error(e15190.Particle(particle).Z, e15190.Particle(
-            particle).N, self.norm, self.alpha, self.beta, self.norm_err, self.alpha_err, self.beta_err)
-        return pd.DataFrame({
-            'x': df.x.to_numpy(),
-            'y': y,
-            'y_err': yerr,
-            'y_ferr': np.divide(
-                yerr, y, where=(y != 0.0), out=np.zeros_like(yerr))
-        })
