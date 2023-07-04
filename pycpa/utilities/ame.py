@@ -154,3 +154,9 @@ class AME:
         df.to_csv(fname, sep=' ', columns=usecols, index=False)
 
         return df
+    
+def get_mass(symbol='', N=None, Z=None, unit='MeV'):
+    return AME().get_mass(symbol=symbol, N=N, Z=Z, unit=unit)
+
+def get_NZ(symbol):
+    return AME().get_NZ(symbol)
