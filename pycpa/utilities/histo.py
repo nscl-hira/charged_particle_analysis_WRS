@@ -95,7 +95,6 @@ class histogram_handler:
         bin1, bin2 = histogram_handler.findbin(df, range) - 1
         x = np.unique(df[axis])
         range = (x[bin1], x[bin2])
-        print(range)
         return df.query(f'{axis} >= {range[0]} & {axis} <= {range[1]}')
 
     @staticmethod
