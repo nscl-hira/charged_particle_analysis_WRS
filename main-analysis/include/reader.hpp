@@ -20,7 +20,7 @@ namespace fs = std::filesystem;
 #include "TH1D.h"
 #include "TH2D.h"
 
-#include "e15190/RunInfo.hh"
+#include "runinfo.hpp"
 
 class Reader
 {
@@ -72,6 +72,18 @@ public:
     int *GetHiRA_NumStripB() { return &hira_numstripb[0]; }
     int *GetHiRA_NumCSI() { return &hira_numcsi[0]; }
 
+    double *GetHiRA_Kinergy_SiF_Cal() { return &hira_kinergy_sif_cal[0]; }
+    double *GetHiRA_Kinergy_SiB_Cal() { return &hira_kinergy_sib_cal[0]; }
+    double *GetHiRA_Kinergy_CsI_Cal() { return &hira_kinergy_csi_cal[0]; }
+    double* GetHiRA_Kinergy_SiF_Matched() { return &hira_kinergy_sif_matched[0]; }
+    double* GetHiRA_Kinergy_SiB_Matched() { return &hira_kinergy_sib_matched[0]; }
+
+    unsigned short* GetHiRA_Kinergy_SiF_High() { return &hira_kinergy_sif_high[0]; }
+    unsigned short* GetHiRA_Kinergy_SiF_Low() { return &hira_kinergy_sif_low[0]; }
+    unsigned short* GetHiRA_Kinergy_SiB_High() { return &hira_kinergy_sib_high[0]; }
+    unsigned short* GetHiRA_Kinergy_SiB_Low() { return &hira_kinergy_sib_low[0]; }
+    unsigned short* GetHiRA_Kinergy_CsI() { return &hira_kinergy_csi[0]; }
+
 private:
     fs::path mDirData;
 
@@ -108,7 +120,16 @@ protected:
     std::array<int, MAX_MULTI> hira_numstripb;
     std::array<int, MAX_MULTI> hira_numcsi;
 
-    // veto wall
-    // neutron wall
+    std::array<unsigned short, MAX_MULTI> hira_kinergy_sif_high;
+    std::array<unsigned short, MAX_MULTI> hira_kinergy_sif_low;
+    std::array<unsigned short, MAX_MULTI> hira_kinergy_sib_high;
+    std::array<unsigned short, MAX_MULTI> hira_kinergy_sib_low;
+    std::array<double, MAX_MULTI> hira_kinergy_sif_matched;
+    std::array<double, MAX_MULTI> hira_kinergy_sib_matched;
+    std::array<double, MAX_MULTI> hira_kinergy_sif_cal;
+    std::array<double, MAX_MULTI> hira_kinergy_sib_cal;
+    std::array<unsigned short, MAX_MULTI> hira_kinergy_csi;
+    std::array<double, MAX_MULTI> hira_kinergy_csi_cal;
+
 };
 #endif

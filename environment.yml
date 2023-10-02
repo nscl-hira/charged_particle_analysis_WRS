@@ -3,31 +3,26 @@ channels:
    - conda-forge
    - anaconda
 dependencies:
-   - python=3.9.12
+   - python=3.11.4
    - conda-build
 
    # analysis tools
-   - numpy>=1.19.0
-   - astropy>=4.0
-   - scipy>=1.6
-   - sympy>=1.8
-   - pandas>=1.1.0
-   - iminuit=2.18.0
-   - scikit-learn>=0.24.0
-   - autograd>=1.5
+   - numpy>=1.25.0
+   - astropy>=5.3
+   - scipy>=1.11.1
+   - pandas>=2.0.3
+   - iminuit=2.22.0
 
-   # performance 
-   - numba>=0.51.0
+   # cpp libraries
+   - nlohmann_json=3.11.2
 
    # ROOT CERN
-   - uproot>=4.0.7
-   - root=6.26.06
+  #  - uproot>=5.0.9
+   - root=6.28.0
 
    # plotting
-   - matplotlib>=3.3.0
+   - matplotlib>=3.7.1
 
    # miscellaneous
-   - mako>=1.1.4
-   - autopep8
-   - fortranformat=1.2.2
-   - ipykernel>=6.16.0
+  #  - fortranformat=1.2.2
+   - ipykernel>=6.23.3

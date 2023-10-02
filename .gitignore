@@ -21,21 +21,3 @@ __pycache__/
 # temp files
 .directory
 *.log
-
-# vscode setting
-.vscode
-
-# results
-result
-
-# executable 
-*.exe
-
-# legacy
-upstream
-
-# out-dated files
-old
-bin
-
-

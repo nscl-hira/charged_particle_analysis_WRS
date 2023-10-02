@@ -1,4 +1,4 @@
-#include "Reader.hh"
+#include "reader.hpp"
 Reader::Reader(const std::string &reaction, const std::string &dir_data, const std::string &path_runinfo)
 {
     this->_Initialize_ReactionSystem(reaction);
@@ -105,15 +105,30 @@ void Reader::Initialize_Chain(const int &iRun)
     chain->SetBranchAddress("TDCTriggers.uBallNW_TRG", &this->tdc_trigger_uball_nw);
 
     chain->SetBranchAddress("uBall.fmulti", &this->uball_multi);
+
     chain->SetBranchAddress("HiRA.fmulti", &this->hira_multi);
     chain->SetBranchAddress("HiRA.fAId", &this->hira_A[0]);
     chain->SetBranchAddress("HiRA.fZId", &this->hira_Z[0]);
     chain->SetBranchAddress("HiRA.fKinEnergy", &this->hira_kinergy[0]);
 
+
     chain->SetBranchAddress("HiRA.fnumtel", &this->hira_numtel[0]);
     chain->SetBranchAddress("HiRA.fnumstripf", &this->hira_numstripf[0]);
     chain->SetBranchAddress("HiRA.fnumstripb", &this->hira_numstripb[0]);
     chain->SetBranchAddress("HiRA.fnumcsi", &this->hira_numcsi[0]);
+
+
+    chain->SetBranchAddress("HiRA.fEnergySifHi", &this->hira_kinergy_sif_high[0]);
+    chain->SetBranchAddress("HiRA.fEnergySifLo", &this->hira_kinergy_sif_low[0]);
+    chain->SetBranchAddress("HiRA.fEnergySibHi", &this->hira_kinergy_sib_high[0]);
+    chain->SetBranchAddress("HiRA.fEnergySibLo", &this->hira_kinergy_sib_low[0]);
+    chain->SetBranchAddress("HiRA.fEnergySifMatched", &this->hira_kinergy_sif_matched[0]);
+    chain->SetBranchAddress("HiRA.fEnergySibMatched", &this->hira_kinergy_sib_matched[0]);
+    chain->SetBranchAddress("HiRA.fEnergySifCal", &this->hira_kinergy_sif_cal[0]);
+    chain->SetBranchAddress("HiRA.fEnergySibCal", &this->hira_kinergy_sib_cal[0]);
+    chain->SetBranchAddress("HiRA.fEnergycsi", &this->hira_kinergy_csi[0]);
+    chain->SetBranchAddress("HiRA.fEnergycsiCal", &this->hira_kinergy_csi_cal[0]);
+    
     return;
 }
 
